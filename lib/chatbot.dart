@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'services/chatbot/chatbot_service.dart';
+import 'widgets/smartcare_bottom_nav.dart';
+
 class ChatbotScreen extends StatefulWidget {
   const ChatbotScreen({super.key});
 
@@ -19,16 +22,84 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     ),
   ];
 
-  static String _currentTimeText() {
-    final time = TimeOfDay.now();
+  static String _currentTimeText() => _timeText(DateTime.now());
+
+  static String _timeText(DateTime dateTime) {
+    final time = TimeOfDay.fromDateTime(dateTime);
     final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
     final minute = time.minute.toString().padLeft(2, '0');
     final period = time.period == DayPeriod.am ? 'AM' : 'PM';
     return '$hour:$minute $period';
   }
 
-  // Rule-based reply engine: each rule is checked in order against the
-  // lowercased user message, and the first keyword match wins.
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  /* The conversation is saved on the server, so this brings back the
+  earlier messages when the tab is opened again. The greeting always
+  stays at the top and is never saved. */
+  Future<void> _loadHistory() async {
+    try {
+      final history = await ChatbotService.getHistory();
+      if (!mounted || history.isEmpty) return;
+      setState(() {
+        _messages.addAll(
+          history.map(
+            (item) => _ChatMessage(
+              text: item.message,
+              isUser: item.isUser,
+              isRead: true,
+              time: _timeText(item.createdAt ?? DateTime.now()),
+            ),
+          ),
+        );
+      });
+      _scrollToBottom();
+    } catch (_) {
+      // Server unreachable; start with just the greeting.
+    }
+  }
+
+  Future<void> _confirmClearChat() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear chat?'),
+        content: const Text(
+          'This deletes your whole conversation with SmartCare AI.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ChatbotService.clearHistory();
+      if (!mounted) return;
+      setState(() => _messages.removeRange(1, _messages.length));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't clear the chat. Try again.")),
+      );
+    }
+  }
+
+  // Offline backup only: the real replies come from the chatbot_rule
+  // table on the server. These are used when the server can't be
+  // reached, checked in order, and the first keyword match wins.
   static const List<_ChatRule> _rules = [
     _ChatRule(
       keywords: ['hello', 'hi', 'hey', 'kumusta', 'magandang'],
@@ -77,12 +148,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       reply:
           'You can book an appointment from the Home tab or the Book tab. Just choose a clinic location, pick an available date and time, and confirm your appointment.  ',
     ),
-    _ChatRule(
-      keywords: ['hour', 'open', 'close', 'location', 'address', 'clinic'],
-      reply:
-          'Clinic schedules vary by location: \n\n• Guagua: Wednesday, 1:00 PM to 3:00 PM; Friday, 1:00 PM to 3:00 PM \n• Lubao: Wednesday, 10:00 AM to 12:00 PM; Friday, 10:00 AM to 12:00 PM \n• Sta. Rita: Tuesday, 3:00 PM to 5:00 PM; Wednesday, 3:00 PM to 5:00 PM; Friday, 3:00 PM to 5:00 PM \n\nIf you want to know the full address of a clinic, simply type the municipality name, such as Guagua, Sta. Rita, or Lubao.',
-    ),
-
+    // The specific clinics come before the general "clinic" rule so
+    // "where is the clinic in Guagua" gives the Guagua address.
     _ChatRule(
       keywords: [
         'sta. rita',
@@ -108,13 +175,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       reply:
           'J.P. Rizal St., Sta. Cruz, Lubao, Pampanga (Diagnostic Center Laboratory)',
     ),
-
     _ChatRule(
-      keywords: ['health tip', 'advice', 'symptom', 'fever', 'pain', 'sick'],
+      keywords: ['hour', 'open', 'close', 'location', 'address', 'clinic'],
       reply:
-          'I can share general wellness tips, but for symptoms or '
-          'anything urgent, please consult your doctor directly or book a '
-          'consultation — I am not a substitute for medical advice.',
+          'Clinic schedules vary by location: \n\n• Guagua: Wednesday, 1:00 PM to 3:00 PM; Friday, 1:00 PM to 3:00 PM \n• Lubao: Wednesday, 10:00 AM to 12:00 PM; Friday, 10:00 AM to 12:00 PM \n• Sta. Rita: Tuesday, 3:00 PM to 5:00 PM; Wednesday, 3:00 PM to 5:00 PM; Friday, 3:00 PM to 5:00 PM \n\nIf you want to know the full address of a clinic, simply type the municipality name, such as Guagua, Sta. Rita, or Lubao.',
     ),
 
     _ChatRule(
@@ -136,18 +200,29 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   static const String _fallbackReply =
       "I'm not sure I understood that. You can ask me about booking, "
-      "rescheduling, clinic hours, payment, or tap one of the suggestions "
+      "rescheduling, clinic hours, or tap one of the suggestions "
       "below. If I can't answer your question, please go to Menu > Contact "
       "and tell us your concern.";
 
   String _generateReply(String userText) {
     final normalized = userText.toLowerCase();
     for (final rule in _rules) {
-      if (rule.keywords.any(normalized.contains)) {
+      if (rule.keywords.any((keyword) => _keywordMatches(normalized, keyword))) {
         return rule.reply;
       }
     }
     return _fallbackReply;
+  }
+
+  /* Same check as chatbot_keyword_matches in chatbot_helper.php: the
+  keyword has to start a word ("ty" no longer matches inside "qwerty"),
+  and short keywords (under 4 letters) must be the whole word. */
+  static bool _keywordMatches(String normalizedMessage, String keyword) {
+    final end = keyword.length < 4 ? r'(?![\p{L}\p{N}])' : '';
+    return RegExp(
+      r'(?<![\p{L}\p{N}])' + RegExp.escape(keyword) + end,
+      unicode: true,
+    ).hasMatch(normalizedMessage);
   }
 
   void _sendMessage() {
@@ -157,7 +232,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     _messageController.clear();
   }
 
-  void _sendUserMessage(String text) {
+  /* Shows the user's bubble right away, then asks the server for the
+  reply (the server also saves both). If the server can't be reached,
+  the reply comes from the offline rules above so the chat still works. */
+  Future<void> _sendUserMessage(String text) async {
     final userMessage = _ChatMessage(
       text: text,
       isUser: true,
@@ -170,19 +248,24 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     });
     _scrollToBottom();
 
-    Future.delayed(const Duration(milliseconds: 700), () {
-      if (!mounted) return;
-      final aiMessage = _ChatMessage(
-        text: _generateReply(text),
-        isUser: false,
-        time: _formattedTime(),
-      );
-      setState(() {
-        _messages.add(aiMessage);
-        _markLastUserMessageRead();
-      });
-      _scrollToBottom();
+    String reply;
+    try {
+      reply = (await ChatbotService.sendMessage(text)).message;
+    } catch (_) {
+      reply = _generateReply(text);
+    }
+    if (!mounted) return;
+
+    final aiMessage = _ChatMessage(
+      text: reply,
+      isUser: false,
+      time: _formattedTime(),
+    );
+    setState(() {
+      _messages.add(aiMessage);
+      _markLastUserMessageRead();
     });
+    _scrollToBottom();
   }
 
   void _markLastUserMessageRead() {
@@ -207,13 +290,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     });
   }
 
-  String _formattedTime() {
-    final time = TimeOfDay.now();
-    final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
-    return '$hour:$minute $period';
-  }
+  String _formattedTime() => _currentTimeText();
 
   @override
   void dispose() {
@@ -226,6 +303,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4EEFF),
+      bottomNavigationBar: const SmartCareBottomNav(
+        currentItem: SmartCareBottomItem.chatbot,
+      ),
       body: SafeArea(
         top: false,
         child: Container(
@@ -257,21 +337,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          alignment: Alignment.center,
-                          child: const Icon(
-                            Icons.arrow_back_ios_new,
-                            size: 18,
-                            color: Color(0xFF5C28D6),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
                       Container(
                         width: 50,
                         height: 50,
@@ -322,6 +387,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                               ],
                             ),
                           ],
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Clear chat',
+                        onPressed: _confirmClearChat,
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Color(0xFF5C28D6),
                         ),
                       ),
                     ],
@@ -407,15 +480,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                                     label: 'About Doctor',
                                     onTap: () =>
                                         _sendUserMessage('About Doctor'),
-                                  ),
-                                ),
-                                SizedBox(
-                                  width: chipWidth,
-                                  child: _ChatActionChip(
-                                    label: 'Health tips & advice',
-                                    onTap: () => _sendUserMessage(
-                                      'Health tips & advice',
-                                    ),
                                   ),
                                 ),
                               ],

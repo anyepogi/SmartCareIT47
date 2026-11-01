@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
+import 'smartcare_date_picker.dart';
 
 const List<String> _monthNames = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 /// Parses a "yyyy-MM-dd" string (the format the backend's DATE column
@@ -27,6 +38,30 @@ String _friendlyDate(DateTime date) {
   return "${_monthNames[date.month - 1]} ${date.day}, ${date.year}";
 }
 
+TextStyle _labelStyle(bool large) => large
+    ? TextStyle(
+        color: Colors.grey.shade700,
+        fontSize: 13.5,
+        fontWeight: FontWeight.w600,
+      )
+    : const TextStyle(
+        color: Color(0xFF999999),
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+      );
+
+TextStyle _valueStyle(bool large) => large
+    ? const TextStyle(
+        color: Colors.black87,
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      )
+    : const TextStyle(
+        color: Color(0xFF006B2D),
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      );
+
 /// A profile field styled like [ProfileGenderField]'s container, but for
 /// picking a birth date via the native calendar instead of free typing.
 /// The value passed in/out through [onChanged] is always "yyyy-MM-dd" (what
@@ -39,6 +74,7 @@ class ProfileDateField extends StatelessWidget {
     required this.value,
     required this.isEditing,
     this.onChanged,
+    this.large = false,
   });
 
   final IconData icon;
@@ -46,6 +82,9 @@ class ProfileDateField extends StatelessWidget {
   final String value;
   final bool isEditing;
   final ValueChanged<String>? onChanged;
+
+  /// Tablet styling: roomier padding, darker labels and bigger values.
+  final bool large;
 
   String get _displayText {
     final parsed = _parseIsoDate(value);
@@ -58,6 +97,7 @@ class ProfileDateField extends StatelessWidget {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
+      builder: smartCareDatePickerBuilder,
       initialDate: initial,
       firstDate: DateTime(1900),
       lastDate: now,
@@ -71,7 +111,9 @@ class ProfileDateField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      padding: large
+          ? const EdgeInsets.symmetric(vertical: 12, horizontal: 16)
+          : const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(8),
@@ -91,23 +133,16 @@ class ProfileDateField extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          label,
-                          style: const TextStyle(
-                            color: Color(0xFF999999),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                        Text(label, style: _labelStyle(large)),
                         const SizedBox(height: 2),
                         Row(
                           children: [
                             Expanded(
                               child: Text(
                                 value.isEmpty ? 'Select date' : _displayText,
-                                style: const TextStyle(
-                                  color: Color(0xFF006B2D),
-                                  fontSize: 13,
+                                style: TextStyle(
+                                  color: const Color(0xFF006B2D),
+                                  fontSize: large ? 16 : 13,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -125,22 +160,11 @@ class ProfileDateField extends StatelessWidget {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        label,
-                        style: const TextStyle(
-                          color: Color(0xFF999999),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      Text(label, style: _labelStyle(large)),
                       const SizedBox(height: 2),
                       Text(
                         value.isEmpty ? 'Not provided' : _displayText,
-                        style: const TextStyle(
-                          color: Color(0xFF006B2D),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: _valueStyle(large),
                       ),
                     ],
                   ),
@@ -161,6 +185,7 @@ class ProfileGenderField extends StatelessWidget {
     required this.value,
     required this.isEditing,
     this.onChanged,
+    this.large = false,
   });
 
   static const List<String> options = ['Male', 'Female', 'Other'];
@@ -171,10 +196,15 @@ class ProfileGenderField extends StatelessWidget {
   final bool isEditing;
   final ValueChanged<String>? onChanged;
 
+  /// Tablet styling: roomier padding, darker labels and bigger values.
+  final bool large;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      padding: large
+          ? const EdgeInsets.symmetric(vertical: 12, horizontal: 16)
+          : const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(8),
@@ -193,18 +223,14 @@ class ProfileGenderField extends StatelessWidget {
                     child: DropdownButtonFormField<String>(
                       initialValue: options.contains(value) ? value : null,
                       isDense: true,
-                      style: const TextStyle(
-                        color: Color(0xFF006B2D),
-                        fontSize: 13,
+                      style: TextStyle(
+                        color: const Color(0xFF006B2D),
+                        fontSize: large ? 16 : 13,
                         fontWeight: FontWeight.w600,
                       ),
                       decoration: InputDecoration(
                         labelText: label,
-                        labelStyle: const TextStyle(
-                          color: Color(0xFF999999),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        labelStyle: _labelStyle(large),
                         border: InputBorder.none,
                         isDense: true,
                         contentPadding: EdgeInsets.zero,
@@ -232,22 +258,11 @@ class ProfileGenderField extends StatelessWidget {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        label,
-                        style: const TextStyle(
-                          color: Color(0xFF999999),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      Text(label, style: _labelStyle(large)),
                       const SizedBox(height: 2),
                       Text(
                         value.isEmpty ? 'Not provided' : value,
-                        style: const TextStyle(
-                          color: Color(0xFF006B2D),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: _valueStyle(large),
                       ),
                     ],
                   ),

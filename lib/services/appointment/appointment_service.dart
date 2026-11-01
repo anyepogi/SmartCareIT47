@@ -1,49 +1,55 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 
 class BookingResult {
-  const BookingResult({required this.appointmentId, required this.code});
+  const BookingResult({
+    required this.appointmentId,
+    required this.code,
+    required this.queueNumber,
+    required this.queueCode,
+  });
 
   final int appointmentId;
+
+  /// Reference number, e.g. STR2026103003.
   final String code;
+  final int queueNumber;
+
+  /// Queue number shown to users, e.g. SO3 or SW3.
+  final String queueCode;
+
+  factory BookingResult.fromJson(Map<String, dynamic> body) => BookingResult(
+    appointmentId: body['appointment_id'] as int,
+    code: body['appointment_code'] as String,
+    queueNumber: body['queue_number'] as int,
+    queueCode: body['queue_code'] as String,
+  );
 }
 
 class AppointmentService {
   AppointmentService._();
 
-  /* This creates a new appointment in the database. It sends the patient
-  id, clinic location, date, and time slot to the backend. The backend
-  checks if the slot is still free before saving it. If isReschedule is
-  true, it tells the backend this booking replaces an old appointment
-  that was just cancelled, so it can log it correctly. If actorUserId is
-  given, it means a staff member (doctor or secretary) is booking this
-  for the patient, not the patient booking it themselves. If the booking
-  works, it returns the new appointment id and its reference code. If it
-  fails (for example the slot got taken first), it throws an error with
-  the reason from the backend. */
+  /// Books an online appointment and returns the queue number for that
+  /// clinic and date (e.g. SO3). To reschedule, pass
+  /// rescheduleAppointmentId; the old one is only cancelled after the new
+  /// booking goes through. Staff can book for a patient by passing userId.
+  /// Throws the backend's message if the booking isn't allowed.
   static Future<BookingResult> book({
     required int userId,
     required String location,
     required String date,
-    required String timeSlot,
-    bool isReschedule = false,
-    int? actorUserId,
+    int? rescheduleAppointmentId,
   }) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/appointment/book.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'user_id': userId,
         'location': location,
         'date': date,
-        'time_slot': timeSlot,
-        'is_reschedule': isReschedule,
-        'actor_user_id': actorUserId,
+        'reschedule_appointment_id': rescheduleAppointmentId,
       }),
     );
 
@@ -52,22 +58,54 @@ class AppointmentService {
       throw Exception(body['message'] ?? 'Failed to book appointment.');
     }
 
-    return BookingResult(
-      appointmentId: body['appointment_id'] as int,
-      code: body['appointment_code'] as String,
-    );
+    return BookingResult.fromJson(body);
   }
 
-  /// Returns the patient's nearest upcoming booked appointment, or null if
-  /// they don't have one.
+  /// Adds a walk-in patient (secretary only). Walk-ins share the queue with
+  /// online bookings and show as SW + number. contactNumber is required,
+  /// middleName and email are optional.
+  static Future<BookingResult> bookWalkIn({
+    required String lastName,
+    required String firstName,
+    String? middleName,
+    required String contactNumber,
+    String? email,
+    required String location,
+    required String date,
+  }) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/appointment/book_walkin.php',
+    );
+
+    final response = await ApiConfig.post(
+      uri,
+      body: jsonEncode({
+        'last_name': lastName,
+        'first_name': firstName,
+        'middle_name': middleName ?? '',
+        'contact_number': contactNumber,
+        'email': email ?? '',
+        'location': location,
+        'date': date,
+      }),
+    );
+
+    final Map<String, dynamic> body = jsonDecode(response.body);
+    if (response.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to record the walk-in.');
+    }
+
+    return BookingResult.fromJson(body);
+  }
+
+  /// The patient's nearest upcoming appointment, or null if none.
   static Future<Map<String, dynamic>?> getUpcoming(int userId) async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/appointment/get_upcoming.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 
@@ -79,9 +117,8 @@ class AppointmentService {
     return body['appointment'] as Map<String, dynamic>?;
   }
 
-  /// Returns completed visits, newest first. Pass [userId] to scope to one
-  /// patient (for their own visit history), or omit it for every patient's
-  /// completed visits (for staff review).
+  /// Completed visits, newest first. Pass userId for one patient's history,
+  /// or leave it out to get everyone's (staff view).
   static Future<List<Map<String, dynamic>>> getVisitHistory({
     int? userId,
   }) async {
@@ -89,9 +126,8 @@ class AppointmentService {
       '${ApiConfig.baseUrl}/api/appointment/get_visit_history.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 
@@ -103,14 +139,14 @@ class AppointmentService {
     return List<Map<String, dynamic>>.from(body['visits'] as List);
   }
 
-  /// Returns every appointment in the system (any patient, any status),
-  /// newest first. Used by the staff-facing Appointment Management screen.
+  /// Every appointment of every patient, newest first.
+  /// Used by Appointment Management.
   static Future<List<Map<String, dynamic>>> getAllAppointments() async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/appointment/get_all_appointments.php',
     );
 
-    final response = await http.post(uri);
+    final response = await ApiConfig.post(uri);
 
     final Map<String, dynamic> body = jsonDecode(response.body);
     if (response.statusCode != 200 || body['success'] != true) {
@@ -120,16 +156,14 @@ class AppointmentService {
     return List<Map<String, dynamic>>.from(body['appointments'] as List);
   }
 
-  /// Returns all of the patient's upcoming (booked, not-yet-passed)
-  /// appointments, ordered soonest first.
+  /// The patient's upcoming appointments, soonest first.
   static Future<List<Map<String, dynamic>>> getAllUpcoming(int userId) async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/appointment/get_all_upcoming.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 
@@ -141,16 +175,15 @@ class AppointmentService {
     return List<Map<String, dynamic>>.from(body['appointments'] as List);
   }
 
-  /// Returns the patient's historical booking pattern: weekdays, locations,
-  /// and time slots ranked from most to least frequently booked.
+  /// The patient's usual days, clinics, and times, ranked by how often
+  /// they booked them.
   static Future<Map<String, dynamic>> getBookingPattern(int userId) async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/appointment/get_booking_pattern.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 
@@ -162,10 +195,8 @@ class AppointmentService {
     return body;
   }
 
-  /* This lets a doctor or secretary change an appointment's status by
-  hand, for example from Pending to Confirmed. It sends the appointment
-  id, the new status, and who made the change (actorUserId) to the
-  backend, so the change gets written to the audit log too. */
+  /// Manual status change by staff. actorUserId is sent so it shows up in
+  /// the audit log.
   static Future<void> updateStatus({
     required int appointmentId,
     required String status,
@@ -175,9 +206,8 @@ class AppointmentService {
       '${ApiConfig.baseUrl}/api/appointment/update_status.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'appointment_id': appointmentId,
         'status': status,
@@ -191,12 +221,9 @@ class AppointmentService {
     }
   }
 
-  /* This cancels an appointment. It does not delete the row from the
-  database, it only changes its status to cancelled, so the record is
-  still kept for history. The reason is optional text explaining why it
-  was cancelled (for example "Rescheduled by the clinic"), and
-  actorUserId records who cancelled it, since it might be the patient
-  themselves or a staff member cancelling on their behalf. */
+  /// Cancels an appointment. Only the status changes, the record is kept.
+  /// reason is optional. actorUserId is whoever cancelled it (the patient
+  /// or staff).
   static Future<void> cancel(
     int appointmentId, {
     int? actorUserId,
@@ -204,9 +231,8 @@ class AppointmentService {
   }) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/appointment/cancel.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'appointment_id': appointmentId,
         'actor_user_id': actorUserId,

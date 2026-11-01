@@ -1,18 +1,12 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 
 class ContactService {
   ContactService._();
 
-  /* This sends the Contact Us form (name, email, and the message or
-  concern) to the backend, which then emails it to the clinic's support
-  address using PHPMailer. If actorUserId is given, it means a logged in
-  user sent this, so the backend can record who sent it in the audit
-  log. If no one is logged in, it is sent as a guest message using the
-  name and email typed in the form. */
+  /// Sends the Contact Us form; the backend emails it to the clinic.
+  /// actorUserId is set when logged in so it's recorded in the audit log.
   static Future<void> sendMessage({
     required String name,
     required String email,
@@ -21,9 +15,8 @@ class ContactService {
   }) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/contact/send_message.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'name': name,
         'email': email,

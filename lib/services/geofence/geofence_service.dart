@@ -1,17 +1,44 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 
-class DoctorLocationStatus {
-  const DoctorLocationStatus({
+enum ClinicPresence { inClinic, onTheWay, notInClinic }
+
+/// What patients see for one clinic on the Doctor Availability card.
+/// [etaMinutes] and [distanceKm] are only set when [presence] is
+/// [ClinicPresence.onTheWay].
+class ClinicAvailability {
+  const ClinicAvailability({
     required this.location,
-    required this.doctorName,
+    required this.presence,
+    this.etaMinutes,
+    this.distanceKm,
   });
 
   final String location;
+  final ClinicPresence presence;
+  final int? etaMinutes;
+  final double? distanceKm;
+
+  factory ClinicAvailability.fromJson(Map<String, dynamic> json) {
+    return ClinicAvailability(
+      location: json['location'] as String,
+      presence: switch (json['status']) {
+        'in_clinic' => ClinicPresence.inClinic,
+        'on_the_way' => ClinicPresence.onTheWay,
+        _ => ClinicPresence.notInClinic,
+      },
+      etaMinutes: (json['eta_minutes'] as num?)?.toInt(),
+      distanceKm: (json['distance_km'] as num?)?.toDouble(),
+    );
+  }
+}
+
+class DoctorAvailability {
+  const DoctorAvailability({required this.doctorName, required this.clinics});
+
   final String doctorName;
+  final Map<String, ClinicAvailability> clinics;
 }
 
 class DoctorAccount {
@@ -24,15 +51,14 @@ class DoctorAccount {
 class GeofenceService {
   GeofenceService._();
 
-  /// Returns the clinic's doctor account. SmartCare runs a single clinic
-  /// with one doctor, so this is who the secretary's Geofencing screen
-  /// operates tracking on behalf of.
+  /// The doctor's account. There's only one doctor, so this is who the
+  /// secretary's Geofencing screen tracks for.
   static Future<DoctorAccount> getDoctorAccount() async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/ai_geofence/get_doctor_account.php',
     );
 
-    final response = await http.post(uri);
+    final response = await ApiConfig.post(uri);
 
     final Map<String, dynamic> body = jsonDecode(response.body);
     if (response.statusCode != 200 || body['success'] != true) {
@@ -45,19 +71,15 @@ class GeofenceService {
     );
   }
 
-  /* This asks the backend if the doctor has turned on the "Available"
-  switch, and if the geofence has detected them physically inside a
-  clinic right now. It gives back two things together: the switch state
-  (true or false), and the name of the clinic location if they are
-  currently detected inside one, or null if they are not inside any. */
+  /// The doctor's Available switch, and the clinic they're inside right
+  /// now (null if none).
   static Future<(bool, String?)> getMyAvailability(int userId) async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/ai_geofence/get_availability.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 
@@ -69,11 +91,9 @@ class GeofenceService {
     return (body['is_available'] as bool, body['current_location'] as String?);
   }
 
-  /* This turns the doctor's "Available" switch on or off. Patients and
-  the secretary use this switch to know if the doctor is open for
-  consultations. Turning it off also clears any clinic the doctor was
-  marked as being inside of, so patients never see a doctor marked as
-  "in clinic" while the doctor has switched themselves off. */
+  /// Turns the doctor's Available switch on or off. Turning it off also
+  /// clears the clinic they're marked inside, so patients don't see
+  /// "In Clinic" for an unavailable doctor.
   static Future<void> toggleAvailability({
     required int userId,
     required bool isAvailable,
@@ -84,13 +104,9 @@ class GeofenceService {
     });
   }
 
-  /* This tells the backend that GPS tracking just started or stopped,
-  and optionally sends the current distance (in meters) from the doctor
-  to each clinic. This matters because the doctor and the secretary use
-  separate phones. If the doctor starts tracking on his own phone, the
-  secretary's phone would not know about it unless it asks the backend.
-  So whichever phone is actually running the GPS calls this function,
-  and the other phone can check the backend to see the same status. */
+  /// Tells the backend that tracking started or stopped, with optional
+  /// distances to each clinic. The doctor and secretary use different
+  /// phones, so this is how the other phone knows tracking is on.
   static Future<void> setTrackingStatus({
     required int userId,
     required bool isTracking,
@@ -107,12 +123,8 @@ class GeofenceService {
     await setTrackingStatus(userId: userId, isTracking: false);
   }
 
-  /* This asks the backend if GPS tracking is currently active for the
-  doctor, and the last known distance to each clinic, no matter which
-  phone (doctor's or secretary's) is actually doing the tracking. The
-  Geofencing screens call this every few seconds so both phones agree
-  on what is happening even though only one of them has the real GPS
-  signal running. */
+  /// Whether tracking is on (from either phone) and the last distance to
+  /// each clinic. The Geofencing screens poll this.
   static Future<(bool, Map<String, double?>)> getTrackingStatus(
     int userId,
   ) async {
@@ -120,9 +132,8 @@ class GeofenceService {
       '${ApiConfig.baseUrl}/api/ai_geofence/get_tracking_status.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 
@@ -139,12 +150,9 @@ class GeofenceService {
     return (body['is_tracking'] as bool, distances);
   }
 
-  /* This tells the backend that the doctor just walked into (or out of)
-  the 200 meter circle around a clinic. isInside true means they just
-  arrived, false means they just left. The backend only sends a "doctor
-  has arrived" notification to patients the first time they enter a
-  clinic each day, so patients do not get spammed with notifications if
-  the doctor walks in and out many times. */
+  /// Reports the doctor entering (isInside true) or leaving a clinic's
+  /// 200 m radius. Patients are only notified on the first arrival of
+  /// the day.
   static Future<void> updateLocationStatus({
     required int userId,
     required String location,
@@ -157,37 +165,125 @@ class GeofenceService {
     });
   }
 
-  /// Returns every clinic location that currently has an available doctor
-  /// physically inside its geofence.
-  static Future<List<DoctorLocationStatus>> getStatus() async {
+  /// Sends the doctor's GPS position so the backend can update the ETA
+  /// patients see. Called every 2 minutes while tracking.
+  static Future<void> updatePosition({
+    required int userId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    await _post('update_position.php', {
+      'user_id': userId,
+      'latitude': latitude,
+      'longitude': longitude,
+    });
+  }
+
+  /// Saves the clinic picked on the Doctor Travel card, or clears it when
+  /// destination is null. The patients' ETA uses this clinic.
+  static Future<void> setTravelDestination({
+    required int userId,
+    required String? destination,
+  }) async {
+    await _post('set_travel_destination.php', {
+      'user_id': userId,
+      'destination': destination,
+    });
+  }
+
+  /// The clinic picked on the Doctor Travel card, or null. Used to bring
+  /// the card back after the app restarts.
+  static Future<String?> getMyTravelDestination(int userId) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/ai_geofence/get_availability.php',
+    );
+
+    final response = await ApiConfig.post(
+      uri,
+      body: jsonEncode({'user_id': userId}),
+    );
+
+    final Map<String, dynamic> body = jsonDecode(response.body);
+    if (response.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load travel destination.');
+    }
+
+    return body['travel_destination'] as String?;
+  }
+
+  /// Same as updatePosition, but also returns what the backend worked out:
+  /// - etaMinutes / distanceMeters: the ETA patients see, null if none
+  /// - arrivedAt: the clinic name if this position counts as arrived
+  /// - currentLocation: the clinic the doctor is inside now, or null
+  static Future<
+    ({
+      int? etaMinutes,
+      int? distanceMeters,
+      String? arrivedAt,
+      String? currentLocation,
+    })
+  >
+  reportTravelPosition({
+    required int userId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/ai_geofence/update_position.php',
+    );
+
+    final response = await ApiConfig.post(
+      uri,
+      body: jsonEncode({
+        'user_id': userId,
+        'latitude': latitude,
+        'longitude': longitude,
+      }),
+    );
+
+    final Map<String, dynamic> body = jsonDecode(response.body);
+    if (response.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to report position.');
+    }
+
+    return (
+      etaMinutes: (body['eta_minutes'] as num?)?.toInt(),
+      distanceMeters: (body['eta_distance_m'] as num?)?.toInt(),
+      arrivedAt: body['arrived'] == true ? body['arrived_at'] as String? : null,
+      currentLocation: body['current_location'] as String?,
+    );
+  }
+
+  /// Returns the doctor's status at every clinic: in clinic, on the way
+  /// (with ETA), or not in clinic.
+  static Future<DoctorAvailability> getStatus() async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/ai_geofence/get_status.php',
     );
 
-    final response = await http.post(uri);
+    final response = await ApiConfig.post(uri);
 
     final Map<String, dynamic> body = jsonDecode(response.body);
     if (response.statusCode != 200 || body['success'] != true) {
       throw Exception(body['message'] ?? 'Failed to load doctor status.');
     }
 
-    return (body['locations'] as List)
-        .map(
-          (entry) => DoctorLocationStatus(
-            location: entry['location'] as String,
-            doctorName: entry['doctor_name'] as String,
-          ),
-        )
-        .toList();
+    final clinics = (body['clinics'] as List).map(
+      (entry) => ClinicAvailability.fromJson(entry as Map<String, dynamic>),
+    );
+    return DoctorAvailability(
+      doctorName: body['doctor_name'] as String,
+      clinics: {for (final clinic in clinics) clinic.location: clinic},
+    );
   }
 
-  /// Returns each clinic's persisted target latitude/longitude.
+  /// Saved target lat/lng of each clinic.
   static Future<Map<String, (double, double)>> getClinicCoordinates() async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/ai_geofence/get_clinic_coordinates.php',
     );
 
-    final response = await http.post(uri);
+    final response = await ApiConfig.post(uri);
 
     final Map<String, dynamic> body = jsonDecode(response.body);
     if (response.statusCode != 200 || body['success'] != true) {
@@ -203,7 +299,7 @@ class GeofenceService {
     };
   }
 
-  /// Persists a clinic's target latitude/longitude.
+  /// Saves a clinic's target lat/lng.
   static Future<void> updateClinicCoordinates({
     required String location,
     required double latitude,
@@ -221,11 +317,7 @@ class GeofenceService {
   static Future<void> _post(String endpoint, Map<String, dynamic> body) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/ai_geofence/$endpoint');
 
-    final response = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
+    final response = await ApiConfig.post(uri, body: jsonEncode(body));
 
     final Map<String, dynamic> decoded = jsonDecode(response.body);
     if (response.statusCode != 200 || decoded['success'] != true) {

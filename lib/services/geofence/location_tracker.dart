@@ -7,33 +7,51 @@ import '../../data/location_schedule.dart';
 import '../../state/app_session.dart';
 import 'geofence_service.dart';
 
-/// A doctor is considered "inside" a clinic once their device is within
-/// this many meters of the clinic's target coordinates.
+/// Distance from a clinic (in meters) where the doctor counts as inside.
 const double geofenceRadiusMeters = 200;
 
-/* This class watches the doctor's live GPS position and compares it to
-each clinic's location, to know if the doctor is physically inside a
-clinic or not. There is only ever one of this class in the whole app
-(this is called a singleton), instead of one per screen. This matters
-because in this app, moving from one tab to another using the bottom
-navigation bar actually destroys the old screen completely. If this
-tracker lived inside a screen instead, GPS tracking would stop the
-moment the doctor switched tabs. By keeping it separate from any
-screen, tracking keeps running in the background no matter what screen
-the doctor is looking at. */
+/// How often the position is sent for the patients' ETA.
+const Duration etaReportInterval = Duration(minutes: 2);
+
+/// GPS settings shared by LocationTracker and TravelTracker.
+/// On Android this runs a foreground service (the tracking notification)
+/// so the GPS keeps going when the app is minimized, like when the doctor
+/// opens Waze. Both trackers need the same settings because they share
+/// one GPS stream, and whichever starts first sets it.
+LocationSettings doctorTrackingLocationSettings() {
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    return AndroidSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 5,
+      intervalDuration: const Duration(seconds: 30),
+      foregroundNotificationConfig: const ForegroundNotificationConfig(
+        notificationTitle: 'SmartCare',
+        notificationText:
+            "Location tracking is on so patients can see the doctor's ETA.",
+        notificationChannelName: 'Doctor location tracking',
+        enableWakeLock: true,
+        setOngoing: true,
+      ),
+    );
+  }
+  return const LocationSettings(
+    accuracy: LocationAccuracy.high,
+    distanceFilter: 5,
+  );
+}
+
+/// Watches the doctor's GPS and checks if they're inside a clinic.
+/// It's a singleton so tracking doesn't stop when the doctor changes tabs
+/// (the bottom nav disposes the old screen).
 class LocationTracker {
   LocationTracker._();
   static final LocationTracker instance = LocationTracker._();
 
   final ValueNotifier<bool> isTracking = ValueNotifier(false);
 
-  /// Whether tracking is active according to the backend — which may have
-  /// been started from a DIFFERENT device (the doctor's own, or the
-  /// secretary's operating on his behalf), since [isTracking] only ever
-  /// reflects this device's own local GPS stream. Screens should show
-  /// "Active" when either this or [isTracking] is true. Refreshed via
-  /// [refreshServerTrackingStatus]; kept in sync automatically whenever
-  /// this device's own [start]/[stop] succeed.
+  /// Tracking status from the backend, which may come from the other phone
+  /// (doctor's or secretary's). isTracking is only this phone's GPS, so
+  /// show "Active" if either one is true.
   final ValueNotifier<bool> serverIsTracking = ValueNotifier(false);
 
   final ValueNotifier<String?> locationError = ValueNotifier(null);
@@ -41,28 +59,23 @@ class LocationTracker {
     for (final location in clinicLocations) location: null,
   });
 
-  /// Last distances reported by whichever device is actually driving GPS
-  /// tracking (the doctor's own, or the secretary's on his behalf) — the
-  /// counterpart to [distances], which is empty on this device when the
-  /// OTHER one is the one physically tracking. Refreshed alongside
-  /// [serverIsTracking] via [refreshServerTrackingStatus].
+  /// Distances from whichever phone is tracking. Use this when the other
+  /// phone has the GPS on, since distances would be empty here.
   final ValueNotifier<Map<String, double?>> serverDistances = ValueNotifier({});
 
   final ValueNotifier<Set<String>> insideLocations = ValueNotifier({});
 
-  /// The doctor-editable target coordinates per clinic, kept here (not on
-  /// the Geofencing screen's State) so edits survive the screen being
-  /// disposed when the doctor navigates to another tab via the bottom nav.
-  /// Seeded with sane defaults; [loadTargetCoordinates] refreshes these
-  /// from the database, which is the durable source of truth.
+  /// Target coordinates per clinic. Kept here so edits aren't lost when the
+  /// Geofencing screen is disposed. Uses defaults until
+  /// loadTargetCoordinates gets the saved ones from the database.
   final Map<String, (String, String)> targetCoordinates = {
     'Sta. Rita': ('16.2449', '120.4590'),
     'Lubao': ('15.1322', '120.6843'),
     'Guagua': ('15.3175', '120.8152'),
   };
 
-  /// Refreshes [targetCoordinates] from the database. Leaves the current
-  /// (default or previously loaded) values in place if the fetch fails.
+  /// Loads targetCoordinates from the database. Keeps the current values
+  /// if it fails.
   Future<void> loadTargetCoordinates() async {
     try {
       final coordinates = await GeofenceService.getClinicCoordinates();
@@ -73,7 +86,7 @@ class LocationTracker {
         );
       }
     } catch (_) {
-      // Keep whatever values are already cached.
+      // Keep the cached values.
     }
   }
 
@@ -106,16 +119,15 @@ class LocationTracker {
   Map<String, (double, double)> _targets = {};
   int? _userId;
 
-  /* This turns on GPS tracking for the doctor. It first checks if the
-  app has permission to use the phone's location, and asks for it if
-  not. It also checks if location services (GPS) are turned on in the
-  phone's settings at all. If either check fails, it saves an error
-  message in locationError instead of crashing, so the screen can show
-  a helpful message. If everything is fine, it starts listening to the
-  phone's GPS and tells the backend that tracking is now active. Each
-  time the phone's position updates, _handlePosition below gets called
-  automatically. Calling this again while already tracking does
-  nothing, so it is safe to press "Start" more than once. */
+  /// Sends the position every etaReportInterval. A timer is used because
+  /// the GPS stream only fires when the doctor moves, and the ETA should
+  /// still update while he's stuck in traffic.
+  Timer? _etaTimer;
+  Position? _lastPosition;
+
+  /// Starts GPS tracking. Asks for location permission and checks that GPS
+  /// is on; if either fails, the reason goes to locationError instead of
+  /// throwing. Safe to call again while already tracking.
   Future<void> start({
     required int userId,
     required Map<String, (double, double)> targets,
@@ -148,34 +160,64 @@ class LocationTracker {
     try {
       await GeofenceService.setTrackingStatus(userId: userId, isTracking: true);
     } catch (_) {
-      // Best-effort — local tracking still starts; other devices simply
-      // won't see the "Active" status until the next successful report.
+      // Tracking still runs on this phone; the other phone just won't see
+      // "Active" until the next report goes through.
     }
 
     _subscription =
         Geolocator.getPositionStream(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.high,
-            distanceFilter: 5,
-          ),
+          locationSettings: doctorTrackingLocationSettings(),
         ).listen(
           _handlePosition,
           onError: (Object error) {
             locationError.value = 'Location tracking error: $error';
           },
         );
+
+    _etaTimer?.cancel();
+    _etaTimer = Timer.periodic(etaReportInterval, (_) => _reportPosition());
+    unawaited(_reportPosition());
   }
 
-  // Position updates can arrive faster than the backend round-trip for a
-  // transition completes. Firing those calls without ordering them risks
-  // an older "exit" landing on the server after a newer "enter" — the app
-  // shows the correct live status, but the server (and therefore what
-  // patients see) gets stuck on stale data. These two fields turn the
-  // stream into a simple serial queue: only ever one update in flight,
-  // and if more positions arrive while it's running, only the latest one
-  // is processed next (superseded ones are dropped, not queued up).
+  /// Gets a fresh GPS reading, runs the geofence check, and sends it for the
+  /// ETA. The stream only fires on movement, so a bad first reading could
+  /// stay stuck while the doctor stands still in the clinic. Falls back to
+  /// the last stream position if there's no fresh one.
+  Future<void> _reportPosition() async {
+    final userId = _userId;
+    if (userId == null || !isTracking.value) return;
+    try {
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition();
+        checkPosition(position);
+      } catch (_) {
+        position = _lastPosition;
+      }
+      if (position == null) return;
+      await GeofenceService.updatePosition(
+        userId: userId,
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
+    } catch (_) {
+      // The next tick will retry, and the backend hides old ETAs anyway.
+    }
+  }
+
+  // Positions can come in faster than the backend replies. So an old "exit"
+  // can't land after a newer "enter", only one update runs at a time, and
+  // only the latest waiting position is kept.
   Position? _pendingPosition;
   bool _isApplyingPosition = false;
+
+  /// Runs the geofence check with a position from somewhere else (like
+  /// TravelTracker) instead of waiting for the stream. Does nothing if
+  /// tracking is off.
+  void checkPosition(Position position) {
+    if (!isTracking.value || _userId == null) return;
+    _handlePosition(position);
+  }
 
   void _handlePosition(Position position) {
     _pendingPosition = position;
@@ -196,19 +238,14 @@ class LocationTracker {
     }
   }
 
-  /* This is the main brain of the geofence feature. Every time a new GPS
-  position comes in, this function measures the straight line distance
-  from that position to each clinic's saved coordinates. If the
-  distance is 200 meters or less, the doctor counts as "inside" that
-  clinic. It compares this to whether they were inside before, and if
-  something changed (just walked in, or just walked out), it tells the
-  backend about that change one at a time, in order, so the server
-  never receives an "exit" after a newer "enter" by mistake. This is
-  also where the current distances get saved and sent to the backend so
-  the other device (doctor's or secretary's) can see them too. */
+  /// The main geofence check. Measures the distance to each clinic, and
+  /// anything within geofenceRadiusMeters counts as inside. Enter/exit
+  /// changes are sent to the backend in order, together with the latest
+  /// distances for the other phone.
   Future<void> _applyPosition(Position position) async {
     final userId = _userId;
     if (userId == null) return;
+    _lastPosition = position;
 
     final newDistances = Map<String, double?>.from(distances.value);
     final newInside = Set<String>.from(insideLocations.value);
@@ -238,12 +275,10 @@ class LocationTracker {
         distances: newDistances,
       );
     } catch (_) {
-      // Best-effort — the other device just won't see this particular
-      // distance update; the next position will retry.
+      // Not a big deal, the next position sends it again.
     }
 
-    // Awaited one at a time (not fired concurrently) so the server always
-    // processes them in the same order they happened on the device.
+    // One at a time so the server gets them in the order they happened.
     for (final transition in transitions.entries) {
       if (transition.value) {
         newInside.add(transition.key);
@@ -263,21 +298,18 @@ class LocationTracker {
     }
   }
 
-  /* This turns off GPS tracking. Before it fully stops, it sends an
-  "exit" event to the backend for any clinic the doctor was still
-  marked inside of, so the doctor does not stay stuck showing as "in
-  clinic" forever after tracking has actually stopped. It also waits
-  for any position update that is still being processed to finish
-  first, so an old "enter" message cannot arrive at the server after
-  this "exit" message and undo it by mistake. */
+  /// Stops tracking. Sends "exit" for any clinic the doctor is still marked
+  /// inside so he doesn't stay "In Clinic". Waits for any running update
+  /// first so an old "enter" can't arrive after the exit.
   Future<void> stop() async {
     await _subscription?.cancel();
     _subscription = null;
     _pendingPosition = null;
+    _etaTimer?.cancel();
+    _etaTimer = null;
+    _lastPosition = null;
 
-    // Wait for any in-flight position update to finish reporting before
-    // sending the exit calls below, so they can't race and get
-    // overwritten by a stale "enter" that was still in flight.
+    // Let the running update finish first so it can't overwrite the exits.
     while (_isApplyingPosition) {
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
@@ -292,7 +324,7 @@ class LocationTracker {
             isInside: false,
           );
         } catch (_) {
-          // Best-effort on stop; nothing more useful to do with the error.
+          // Nothing else to do here.
         }
       }
       try {
@@ -301,7 +333,7 @@ class LocationTracker {
           isTracking: false,
         );
       } catch (_) {
-        // Best-effort — other devices will self-correct on their next poll.
+        // The other phone catches up on its next poll.
       }
     }
 
@@ -311,11 +343,9 @@ class LocationTracker {
     serverIsTracking.value = false;
   }
 
-  /// Refreshes [serverIsTracking] and [serverDistances] from the backend —
-  /// call this on screen load and periodically while a Geofencing screen
-  /// is open, so tracking (and distances) started from the OTHER device
-  /// (doctor's own, or the secretary's) is reflected here too, not just
-  /// this device's own [isTracking]/[distances].
+  /// Updates serverIsTracking and serverDistances from the backend. Call it
+  /// on load and every few seconds on the Geofencing screen so tracking
+  /// from the other phone shows up here too.
   Future<void> refreshServerTrackingStatus(int userId) async {
     try {
       final (tracking, reportedDistances) =
@@ -328,27 +358,25 @@ class LocationTracker {
         await stop();
       }
     } catch (_) {
-      // Keep the current cached state if the server cannot be reached.
+      // Keep the cached values if the server can't be reached.
     }
   }
 
-  /// Forces a fresh position check against every target right now — a
-  /// no-op if tracking isn't active. Toggling "Available" off then back on
-  /// doesn't move the device, so the GPS stream (which only fires on
-  /// movement) never emits a new reading; without this, a doctor who never
-  /// physically left the clinic would stay stuck showing "not in clinic"
-  /// server-side until they moved or manually stopped/restarted tracking.
-  /// [insideLocations] is cleared first so the still-inside location is
-  /// re-detected as a fresh "enter" and re-reported, even though this
-  /// device's local state never thought it left.
+  /// Checks the current position again right away (only while tracking).
+  /// Needed after turning Available off and on, since the phone didn't move
+  /// and the stream won't fire. insideLocations is cleared first so the
+  /// clinic gets reported as a fresh "enter".
   Future<void> resyncCurrentPosition() async {
     if (!isTracking.value) return;
     try {
       final position = await Geolocator.getCurrentPosition();
       insideLocations.value = {};
       await _applyPosition(position);
+      // Update the ETA now too, so patients see "On the way" as soon as the
+      // doctor turns Available on.
+      await _reportPosition();
     } catch (_) {
-      // Best-effort — the position stream will eventually catch up too.
+      // The stream will catch up later.
     }
   }
 

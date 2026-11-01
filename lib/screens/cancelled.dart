@@ -14,7 +14,7 @@ class AppointmentCancelledScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: const Color(0xFFE8F2E4),
       body: SafeArea(
         child: Column(
@@ -33,70 +33,18 @@ class AppointmentCancelledScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Cancellation Icon
+                          // Calendar cancel icon (matches Cancel Appointment dialog)
                           Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFEBEB),
-                              borderRadius: BorderRadius.circular(30),
+                            width: 90,
+                            height: 90,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFFEBEE),
+                              shape: BoxShape.circle,
                             ),
-                            child: Center(
-                              child: SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    DecoratedBox(
-                                      decoration: BoxDecoration(
-                                        color: Color(0xFFD32F2F),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: SizedBox(
-                                        width: 40,
-                                        height: 40,
-                                        child: Center(
-                                          child: Icon(
-                                            Icons.calendar_today,
-                                            color: Colors.white,
-                                            size: 27,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      right: 0,
-                                      bottom: 0,
-                                      child: DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: Center(
-                                            child: SizedBox(
-                                              width: 9,
-                                              height: 3,
-                                              child: DecoratedBox(
-                                                decoration: BoxDecoration(
-                                                  color: Color(0xFFD32F2F),
-                                                  borderRadius:
-                                                      BorderRadius.all(
-                                                        Radius.circular(2),
-                                                      ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            child: const Icon(
+                              Icons.event_busy,
+                              color: Color(0xFFD32F2F),
+                              size: 50,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -222,6 +170,16 @@ class AppointmentCancelledScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+
+    // Tablets (wider than 800px) show all text 15% larger; phones are
+    // unchanged.
+    if (MediaQuery.sizeOf(context).width <= 800) return scaffold;
+    return MediaQuery(
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: const TextScaler.linear(1.15)),
+      child: scaffold,
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../data/location_schedule.dart';
 import '../../state/notification_center.dart';
 import 'notification_service.dart';
 
@@ -21,14 +22,10 @@ const List<String> _monthNames = [
   "December",
 ];
 
-/* This class handles reminding a patient about an appointment that is
-coming up soon. It uses the phone's own alarm and notification system
-(not the internet) to show a reminder 1 hour before and again 10
-minutes before the appointment time, so these still work even if the
-app is closed, as long as the phone stays on and the user allowed
-notification permissions. It also checks the backend for anything new
-that happened while the app was closed, like a staff member cancelling
-an appointment, and shows those as real phone notifications too. */
+/// Phone reminders 1 hour and 10 minutes before an appointment. They're
+/// scheduled on the phone itself, so they work even when the app is
+/// closed. Also shows new backend notifications (like a cancelled
+/// appointment) as phone notifications.
 class AppointmentReminderService {
   AppointmentReminderService._();
 
@@ -44,9 +41,11 @@ class AppointmentReminderService {
     try {
       tz.setLocalLocation(tz.getLocation('Asia/Manila'));
     } catch (_) {
-      // Fall back to whatever default timezone package already set.
+      // Keep the timezone package's default.
     }
 
+    // Must match android:icon in AndroidManifest.xml. Release builds strip
+    // unused images, so an icon the manifest doesn't use won't exist.
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/launcher_icon',
     );
@@ -55,7 +54,11 @@ class AppointmentReminderService {
       android: androidSettings,
       iOS: iosSettings,
     );
-    await _plugin.initialize(settings);
+    try {
+      await _plugin.initialize(settings);
+    } catch (_) {
+      // Reminders just won't work; this must never stop the app opening.
+    }
   }
 
   static Future<void> requestPermissions() async {
@@ -73,7 +76,7 @@ class AppointmentReminderService {
     await iosPlugin?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
-  /// Parses a slot start time like "9:00am - 9:30am" into hour/minute.
+  /// Gets the start hour and minute from a slot like "9:00am - 9:30am".
   static (int, int)? _parseSlotStart(String timeSlot) {
     final start = timeSlot.split('-').first.trim().toLowerCase();
     final match = RegExp(r'^(\d{1,2}):(\d{2})(am|pm)$').firstMatch(start);
@@ -89,54 +92,63 @@ class AppointmentReminderService {
     return (hour, minute);
   }
 
+  /// Start time for the reminders: the session's opening time for queue
+  /// number bookings, or the slot start for older bookings. Null if unknown.
+  static DateTime? _appointmentStart(Map<String, dynamic> appointment) {
+    final date = DateTime.tryParse(
+      appointment['schedule_date'] as String? ?? '',
+    );
+    if (date == null) return null;
+    final timeSlot = appointment['time_slot'] as String?;
+    final (int, int)? start;
+    if (timeSlot != null) {
+      start = _parseSlotStart(timeSlot);
+    } else {
+      final range = locationHourRange[appointment['location'] as String? ?? ''];
+      start = range == null ? null : (range.$1, range.$2);
+    }
+    if (start == null) return null;
+    return DateTime(date.year, date.month, date.day, start.$1, start.$2);
+  }
+
+  /// " (Sta. Rita), queue no. SO3" style suffix for reminder messages.
+  static String _whereSuffix(Map<String, dynamic> appointment) {
+    final location = appointment['location'] as String?;
+    final queueCode = appointment['queue_code'] as String?;
+    return "${location != null ? ' ($location)' : ''}"
+        "${queueCode != null ? ', queue no. $queueCode' : ''}";
+  }
+
   static int _reminderIdFor(int appointmentId, int offset) =>
       appointmentId * 10 + offset;
 
-  /* This tells the phone to set two alarms for one appointment: one that
-  goes off 1 hour before, and one that goes off 10 minutes before. It
-  first cancels any old reminders already set for this same appointment,
-  so if the appointment gets rescheduled, the old wrong time reminders
-  do not also go off. If the calculated alarm time has already passed,
-  it simply does not get scheduled (see _scheduleIfFuture below). */
+  /// Sets the 1 hour and 10 minute reminders for an appointment. Old ones
+  /// for the same appointment are cancelled first (in case it was
+  /// rescheduled). Times that already passed are skipped.
   static Future<void> scheduleForAppointment(
     Map<String, dynamic> appointment,
   ) async {
     await initialize();
 
     final appointmentId = appointment['appointment_id'] as int?;
-    final scheduleDate = appointment['schedule_date'] as String?;
-    final timeSlot = appointment['time_slot'] as String?;
-    final location = appointment['location'] as String?;
-    if (appointmentId == null || scheduleDate == null || timeSlot == null) {
-      return;
-    }
+    if (appointmentId == null) return;
 
     await cancelForAppointment(appointmentId);
 
-    final date = DateTime.tryParse(scheduleDate);
-    final slotStart = _parseSlotStart(timeSlot);
-    if (date == null || slotStart == null) return;
-
-    final appointmentTime = tz.TZDateTime(
-      tz.local,
-      date.year,
-      date.month,
-      date.day,
-      slotStart.$1,
-      slotStart.$2,
-    );
-
-    final dateLabel =
-        "${_monthNames[appointmentTime.month - 1]} ${appointmentTime.day}";
+    final start = _appointmentStart(appointment);
+    if (start == null) return;
+    final appointmentTime = tz.TZDateTime.from(start, tz.local);
+    final dateLabel = "${_monthNames[start.month - 1]} ${start.day}";
+    final timeLabel = appointmentTimeLabel(appointment);
+    final where = _whereSuffix(appointment);
 
     await _scheduleIfFuture(
       id: _reminderIdFor(appointmentId, 1),
       fireTime: appointmentTime.subtract(const Duration(hours: 1)),
       title: "Appointment in 1 hour",
       body:
-          "Your appointment on $dateLabel at $timeSlot"
-          "${location != null ? ' ($location)' : ''} is coming up. "
-          "Please arrive earlier than your schedule, at least 10 minutes before.",
+          "Your appointment on $dateLabel at $timeLabel$where is coming up. "
+          "Please be at the clinic before your queue number is called.",
     );
 
     await _scheduleIfFuture(
@@ -144,8 +156,7 @@ class AppointmentReminderService {
       fireTime: appointmentTime.subtract(const Duration(minutes: 10)),
       title: "Appointment in 10 minutes",
       body:
-          "Your appointment on $dateLabel at $timeSlot"
-          "${location != null ? ' ($location)' : ''} is starting soon. "
+          "Your appointment on $dateLabel at $timeLabel$where is starting soon. "
           "Please head to the clinic now.",
     );
   }
@@ -188,41 +199,26 @@ class AppointmentReminderService {
     await _plugin.cancel(_reminderIdFor(appointmentId, 2));
   }
 
-  /* This is a backup check that runs whenever the dashboard loads. It
-  looks at how much time is left before the appointment and, if it is
-  now within 1 hour or within 10 minutes, it also saves a notification
-  in the backend database (not just a phone alarm), so it shows up in
-  the app's own Notifications list too. It remembers which reminders it
-  already sent using the phone's local storage, so the same reminder
-  does not get created again and again every time the dashboard loads. */
+  /// Backup for the phone reminders, run when the dashboard loads. If the
+  /// appointment is within 1 hour or 10 minutes, it also saves a
+  /// notification in the backend. Sent ones are remembered in local
+  /// storage so they aren't created again.
   static Future<void> checkAndNotifyIfDue({
     required int userId,
     required Map<String, dynamic> appointment,
   }) async {
     final appointmentId = appointment['appointment_id'] as int?;
-    final scheduleDate = appointment['schedule_date'] as String?;
-    final timeSlot = appointment['time_slot'] as String?;
-    final location = appointment['location'] as String?;
-    if (appointmentId == null || scheduleDate == null || timeSlot == null) {
-      return;
-    }
+    if (appointmentId == null) return;
 
-    final date = DateTime.tryParse(scheduleDate);
-    final slotStart = _parseSlotStart(timeSlot);
-    if (date == null || slotStart == null) return;
-
-    final appointmentTime = DateTime(
-      date.year,
-      date.month,
-      date.day,
-      slotStart.$1,
-      slotStart.$2,
-    );
+    final appointmentTime = _appointmentStart(appointment);
+    if (appointmentTime == null) return;
     final remaining = appointmentTime.difference(DateTime.now());
     if (remaining.isNegative) return;
 
-    final dateLabel = "${_monthNames[date.month - 1]} ${date.day}";
-    final locationSuffix = location != null ? ' ($location)' : '';
+    final dateLabel =
+        "${_monthNames[appointmentTime.month - 1]} ${appointmentTime.day}";
+    final timeSlot = appointmentTimeLabel(appointment);
+    final locationSuffix = _whereSuffix(appointment);
     final prefs = await SharedPreferences.getInstance();
 
     if (remaining <= const Duration(hours: 1)) {
@@ -233,8 +229,8 @@ class AppointmentReminderService {
         title: "Appointment in 1 hour",
         message:
             "Your appointment on $dateLabel at $timeSlot$locationSuffix is "
-            "coming up. Please arrive earlier than your schedule, at least "
-            "10 minutes before.",
+            "coming up. Please be at the clinic before your queue number "
+            "is called.",
       );
     }
 
@@ -269,21 +265,14 @@ class AppointmentReminderService {
       );
       await prefs.setBool(dedupeKey, true);
     } catch (_) {
-      // Leave the dedupe flag unset so it retries on the next check.
+      // Not marked as sent, so it tries again next time.
     }
   }
 
-  /* This checks the backend for every notification saved for this user,
-  and compares it to the highest notification id this device has seen
-  before (saved in local phone storage). Any notification with a higher
-  id than before is new, so it pops up as a real phone notification.
-  This is how things that happen elsewhere, like a doctor calling the
-  patient's number or a secretary cancelling an appointment, still show
-  up as a phone notification even though there is no real push
-  notification service. It only works while the app is open and this
-  function gets called, usually when a dashboard screen loads. This
-  function also updates the unread notification count badge shown on
-  the bell icon at the top of the screen. */
+  /// Shows new backend notifications as phone notifications. Anything with
+  /// a higher id than the last one seen on this phone counts as new. There's
+  /// no push service, so this only works while the app is open (usually when
+  /// a dashboard loads). Also updates the unread badge on the bell icon.
   static Future<void> syncAndShowNewNotifications(int userId) async {
     await initialize();
 
@@ -305,8 +294,8 @@ class AppointmentReminderService {
         .reduce((a, b) => a > b ? a : b);
 
     if (lastSeenId == null) {
-      // First time syncing on this device: baseline silently so we don't
-      // spam old history as if it just happened.
+      // First sync on this phone: just save the latest id so old
+      // notifications don't pop up.
       await prefs.setInt(lastSeenKey, maxId);
       return;
     }

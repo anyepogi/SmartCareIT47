@@ -7,6 +7,7 @@ import '../services/notifications/appointment_reminder_service.dart';
 import '../services/notifications/notification_service.dart';
 import '../services/schedule/schedule_service.dart';
 import '../state/app_session.dart';
+import 'smartcare_date_picker.dart';
 
 const List<String> _locations = clinicLocations;
 
@@ -250,6 +251,7 @@ class _ManageSlotsPanelState extends State<ManageSlotsPanel> {
         : _date;
     final picked = await showDatePicker(
       context: context,
+      builder: smartCareDatePickerBuilder,
       initialDate: initial,
       firstDate: todayDateOnly,
       lastDate: todayDateOnly.add(const Duration(days: 365)),

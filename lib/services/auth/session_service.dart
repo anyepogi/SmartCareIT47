@@ -1,7 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Persists the logged-in user's session on-device so the app can restore
-/// it on the next launch, without needing a backend call.
+/// Saves the logged in user on the device so they stay logged in after
+/// the app is reopened.
 class SessionService {
   SessionService._();
 
@@ -10,17 +10,16 @@ class SessionService {
   static const _keyFirstName = 'session_first_name';
   static const _keyLastName = 'session_last_name';
   static const _keyRole = 'session_role';
+  static const _keyToken = 'session_token';
 
-  /* This saves the logged in user's info on the phone itself, using
-  SharedPreferences (a simple storage built into the phone, like a small
-  file). This way, when the user closes and reopens the app, it can
-  remember who was logged in without asking them to log in again. */
+  /// Saves the session in SharedPreferences.
   static Future<void> save({
     required int userId,
     required String email,
     required String firstName,
     required String lastName,
     required String role,
+    required String token,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_keyUserId, userId);
@@ -28,17 +27,21 @@ class SessionService {
     await prefs.setString(_keyFirstName, firstName);
     await prefs.setString(_keyLastName, lastName);
     await prefs.setString(_keyRole, role);
+    await prefs.setString(_keyToken, token);
   }
 
-  /// Returns the saved session, or null if the user is not logged in.
+  /// The saved session, or null if logged out. Sessions saved by older
+  /// versions have no token, so those count as logged out.
   static Future<Map<String, dynamic>?> load() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt(_keyUserId);
-    if (userId == null) {
+    final token = prefs.getString(_keyToken);
+    if (userId == null || token == null || token.isEmpty) {
       return null;
     }
 
     return {
+      'token': token,
       'user_id': userId,
       'email': prefs.getString(_keyEmail) ?? '',
       'first_name': prefs.getString(_keyFirstName) ?? '',
@@ -54,5 +57,6 @@ class SessionService {
     await prefs.remove(_keyFirstName);
     await prefs.remove(_keyLastName);
     await prefs.remove(_keyRole);
+    await prefs.remove(_keyToken);
   }
 }

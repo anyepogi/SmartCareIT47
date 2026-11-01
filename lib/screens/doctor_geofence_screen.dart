@@ -137,6 +137,12 @@ class _DoctorGeofenceScreenState extends State<DoctorGeofenceScreen> {
         // stream — so both screens agree on whether tracking is on.
         final displayIsTracking = isTracking || _tracker.serverIsTracking.value;
         final locationError = _tracker.locationError.value;
+        final tablet = _isTablet(context);
+        final sectionTitleStyle = TextStyle(
+          color: const Color(0xFF1B6F2A),
+          fontSize: tablet ? 22 : 16,
+          fontWeight: FontWeight.bold,
+        );
 
         return Scaffold(
           backgroundColor: const Color(0xFFE8F2E4),
@@ -153,149 +159,154 @@ class _DoctorGeofenceScreenState extends State<DoctorGeofenceScreen> {
                       "Manage your clinic area and get alerts when you or patients enter or exit.",
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Geofencing Status Card
-                      Container(
+                  padding: tablet
+                      ? const EdgeInsets.fromLTRB(24, 20, 24, 16)
+                      : const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: tablet ? 1080 : double.infinity,
+                      ),
+                      child: SizedBox(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: const Color(0xFFD5E4D5)),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(
-                                0xFF0F6B2F,
-                              ).withValues(alpha: 0.05),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Shield Icon Container
+                            // Geofencing Status Card
                             Container(
-                              width: 58,
-                              height: 58,
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF0F8F0),
-                                borderRadius: BorderRadius.circular(29),
-                              ),
-                              child: Center(
-                                child: Container(
-                                  width: 42,
-                                  height: 42,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: const Color(0xFF0F6B2F),
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(21),
-                                  ),
-                                  child: const Icon(
-                                    Icons.shield,
-                                    color: Color(0xFF0F6B2F),
-                                    size: 24,
-                                  ),
+                                color: Colors.white,
+                                border: Border.all(
+                                  color: const Color(0xFFD5E4D5),
                                 ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFF0F6B2F,
+                                    ).withValues(alpha: 0.05),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            // Content Column
-                            Expanded(
-                              child: Column(
+                              child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Geofencing Status',
-                                    style: TextStyle(
-                                      color: Color(0xFF0F6B2F),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                                  // Shield Icon Container
+                                  Container(
+                                    width: 58,
+                                    height: 58,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF0F8F0),
+                                      borderRadius: BorderRadius.circular(29),
                                     ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  // Active/Inactive Status with Icon
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        displayIsTracking
-                                            ? Icons.check_circle
-                                            : Icons.pause_circle_filled,
-                                        color: displayIsTracking
-                                            ? const Color(0xFF0F6B2F)
-                                            : const Color(0xFFFF9800),
-                                        size: 18,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        displayIsTracking
-                                            ? 'Active'
-                                            : 'Inactive',
-                                        style: TextStyle(
-                                          color: displayIsTracking
-                                              ? const Color(0xFF0F6B2F)
-                                              : const Color(0xFFFF9800),
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
+                                    child: Center(
+                                      child: Container(
+                                        width: 42,
+                                        height: 42,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: const Color(0xFF0F6B2F),
+                                            width: 2,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            21,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.shield,
+                                          color: Color(0xFF0F6B2F),
+                                          size: 24,
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                  const SizedBox(height: 6),
-                                  // Description Text
-                                  const Text(
-                                    'Confirms when you\'ve arrived at the clinic, so patients can see your real-time availability.',
-                                    style: TextStyle(
-                                      color: Color(0xFF506D54),
-                                      fontSize: 12,
-                                      height: 1.4,
+                                  const SizedBox(width: 12),
+                                  // Content Column
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Geofencing Status',
+                                          style: TextStyle(
+                                            color: const Color(0xFF0F6B2F),
+                                            fontSize: tablet ? 22 : 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        // Active/Inactive Status with Icon
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              displayIsTracking
+                                                  ? Icons.check_circle
+                                                  : Icons.pause_circle_filled,
+                                              color: displayIsTracking
+                                                  ? const Color(0xFF0F6B2F)
+                                                  : const Color(0xFFFF9800),
+                                              size: 18,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              displayIsTracking
+                                                  ? 'Active'
+                                                  : 'Inactive',
+                                              style: TextStyle(
+                                                color: displayIsTracking
+                                                    ? const Color(0xFF0F6B2F)
+                                                    : const Color(0xFFFF9800),
+                                                fontSize: tablet ? 16 : 14,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        // Description Text
+                                        Text(
+                                          'Confirms when you\'ve arrived at the clinic, so patients can see your real-time availability.',
+                                          style: TextStyle(
+                                            color: const Color(0xFF506D54),
+                                            fontSize: tablet ? 14 : 12,
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
                             ),
+                            const SizedBox(height: 24),
+                            // Geofence Tracker
+                            Text('Geofence Tracker', style: sectionTitleStyle),
+                            const SizedBox(height: 12),
+                            _buildTrackerControls(
+                              isTracking,
+                              displayIsTracking,
+                              locationError,
+                            ),
+                            const SizedBox(height: 24),
+                            Text('Clinic Locations', style: sectionTitleStyle),
+                            const SizedBox(height: 12),
+                            for (final location in clinicLocations) ...[
+                              tablet
+                                  ? _buildTabletClinicCard(location, isTracking)
+                                  : _buildClinicInfoCard(location, isTracking),
+                              if (location != clinicLocations.last)
+                                const SizedBox(height: 12),
+                            ],
+                            const SizedBox(height: 24),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      // Geofence Tracker
-                      const Text(
-                        'Geofence Tracker',
-                        style: TextStyle(
-                          color: Color(0xFF1B6F2A),
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildTrackerControls(
-                        isTracking,
-                        displayIsTracking,
-                        locationError,
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Clinic Locations',
-                        style: TextStyle(
-                          color: Color(0xFF1B6F2A),
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      for (final location in clinicLocations) ...[
-                        _buildClinicInfoCard(location, isTracking),
-                        if (location != clinicLocations.last)
-                          const SizedBox(height: 12),
-                      ],
-                      const SizedBox(height: 24),
-                    ],
+                    ),
                   ),
                 ),
               ],
@@ -311,9 +322,48 @@ class _DoctorGeofenceScreenState extends State<DoctorGeofenceScreen> {
     bool displayIsTracking,
     String? locationError,
   ) {
+    final tablet = _isTablet(context);
+    final startButton = ElevatedButton.icon(
+      onPressed: displayIsTracking ? null : _startTracking,
+      icon: const Icon(Icons.play_arrow, size: 18),
+      label: const Text('Start Tracking'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF0F6B2F),
+        disabledBackgroundColor: const Color(0xFFD5E4D5),
+        foregroundColor: Colors.white,
+        disabledForegroundColor: const Color(0xFF999999),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        textStyle: tablet
+            ? const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)
+            : null,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+    );
+    final stopButton = OutlinedButton.icon(
+      onPressed: !displayIsTracking
+          ? null
+          : () {
+              final userId = SmartCareSession.currentUserId;
+              if (userId == null) return;
+              _tracker.stopForUser(userId);
+            },
+      icon: const Icon(Icons.stop, size: 18),
+      label: const Text('Stop'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: const Color(0xFF0F6B2F),
+        disabledForegroundColor: const Color(0xFF999999),
+        side: const BorderSide(color: Color(0xFF0F6B2F)),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        textStyle: tablet
+            ? const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)
+            : null,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+    );
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: tablet ? const EdgeInsets.all(20) : const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFD5E4D5)),
@@ -335,7 +385,10 @@ class _DoctorGeofenceScreenState extends State<DoctorGeofenceScreen> {
                 : displayIsTracking
                 ? 'Tracking is active from the secretary\'s device.'
                 : 'Start tracking to monitor all clinic locations at once.',
-            style: const TextStyle(color: Color(0xFF506D54), fontSize: 12),
+            style: TextStyle(
+              color: const Color(0xFF506D54),
+              fontSize: tablet ? 14 : 12,
+            ),
           ),
           if (locationError != null) ...[
             const SizedBox(height: 8),
@@ -345,51 +398,25 @@ class _DoctorGeofenceScreenState extends State<DoctorGeofenceScreen> {
             ),
           ],
           const SizedBox(height: 16),
-          // Start Tracking and Stop Buttons
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: displayIsTracking ? null : _startTracking,
-                  icon: const Icon(Icons.play_arrow, size: 18),
-                  label: const Text('Start Tracking'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F6B2F),
-                    disabledBackgroundColor: const Color(0xFFD5E4D5),
-                    foregroundColor: Colors.white,
-                    disabledForegroundColor: const Color(0xFF999999),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: !displayIsTracking
-                      ? null
-                      : () {
-                          final userId = SmartCareSession.currentUserId;
-                          if (userId == null) return;
-                          _tracker.stopForUser(userId);
-                        },
-                  icon: const Icon(Icons.stop, size: 18),
-                  label: const Text('Stop'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF0F6B2F),
-                    disabledForegroundColor: const Color(0xFF999999),
-                    side: const BorderSide(color: Color(0xFF0F6B2F)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          // Start Tracking and Stop Buttons: fixed-width and right-aligned
+          // on tablets, sharing the full width on phones.
+          if (tablet)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                SizedBox(width: 200, height: 46, child: startButton),
+                const SizedBox(width: 12),
+                SizedBox(width: 200, height: 46, child: stopButton),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(child: startButton),
+                const SizedBox(width: 12),
+                Expanded(child: stopButton),
+              ],
+            ),
         ],
       ),
     );
@@ -403,6 +430,156 @@ class _DoctorGeofenceScreenState extends State<DoctorGeofenceScreen> {
         _tracker.serverDistances.value[clinicName];
     if (distance == null) return 'Distance: —';
     return 'Distance: ${distance.toStringAsFixed(2)} meters';
+  }
+
+  double? _distanceMeters(String clinicName) =>
+      _tracker.distances.value[clinicName] ??
+      _tracker.serverDistances.value[clinicName];
+
+  Widget _buildStatusPill(String clinicName, bool isTracking) {
+    final isInside =
+        isTracking && _tracker.insideLocations.value.contains(clinicName);
+    final label = !isTracking
+        ? 'Waiting...'
+        : isInside
+        ? 'Inside'
+        : 'Outside';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: isInside ? const Color(0xFFE3F8E3) : const Color(0xFFFFF1DE),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: isInside ? const Color(0xFF0F6B2F) : const Color(0xFFB45309),
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  /// Tablet clinic card: status pill top-right, latitude / longitude /
+  /// distance side by side.
+  Widget _buildTabletClinicCard(String clinicName, bool isTracking) {
+    final latController = _latControllers[clinicName]!;
+    final lonController = _lonControllers[clinicName]!;
+    final isInside = _tracker.insideLocations.value.contains(clinicName);
+    final distance = _distanceMeters(clinicName);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+          color: isInside ? const Color(0xFF0F6B2F) : const Color(0xFFD5E4D5),
+          width: isInside ? 1.5 : 1,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F6B2F).withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE3F8E3),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.location_on,
+                  color: Color(0xFF0F6B2F),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  clinicName,
+                  style: const TextStyle(
+                    color: Color(0xFF1B6F2A),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              _buildStatusPill(clinicName, isTracking),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _CoordinateField(
+                  label: 'Target Latitude',
+                  controller: latController,
+                  confirmedValue: _confirmedLat[clinicName]!,
+                  enabled: !isTracking,
+                  large: true,
+                  onConfirmed: (value) {
+                    _confirmedLat[clinicName] = value;
+                    _tracker.updateTargetLatitude(clinicName, value);
+                  },
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: _CoordinateField(
+                  label: 'Target Longitude',
+                  controller: lonController,
+                  confirmedValue: _confirmedLon[clinicName]!,
+                  enabled: !isTracking,
+                  large: true,
+                  onConfirmed: (value) {
+                    _confirmedLon[clinicName] = value;
+                    _tracker.updateTargetLongitude(clinicName, value);
+                  },
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Distance',
+                      style: TextStyle(
+                        color: Color(0xFF506D54),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      distance == null ? '—' : _formatDistance(distance),
+                      style: const TextStyle(
+                        color: Color(0xFF1A3320),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   String _statusLabel(String clinicName, bool isTracking) {
@@ -531,6 +708,22 @@ class _DoctorGeofenceScreenState extends State<DoctorGeofenceScreen> {
   }
 }
 
+/// Tablet/desktop layouts (wider than 800px) get a centered 1080 container,
+/// larger text and the redesigned clinic cards; phones keep their layout.
+bool _isTablet(BuildContext context) => MediaQuery.sizeOf(context).width > 800;
+
+/// "850 m" under a kilometre, otherwise "11,197.7 km".
+String _formatDistance(double meters) {
+  if (meters < 1000) return '${meters.round()} m';
+  final km = (meters / 1000).toStringAsFixed(1);
+  final parts = km.split('.');
+  final whole = parts[0].replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (_) => ',',
+  );
+  return '$whole.${parts[1]} km';
+}
+
 class _CoordinateField extends StatefulWidget {
   const _CoordinateField({
     required this.label,
@@ -538,10 +731,14 @@ class _CoordinateField extends StatefulWidget {
     required this.confirmedValue,
     required this.enabled,
     required this.onConfirmed,
+    this.large = false,
   });
 
   final String label;
   final TextEditingController controller;
+
+  /// Bigger label and value text for tablet layouts.
+  final bool large;
 
   /// The value last confirmed as saved. Compared against the live
   /// controller text to detect real edits; when the parent updates this
@@ -625,9 +822,9 @@ class _CoordinateFieldState extends State<_CoordinateField> {
       children: [
         Text(
           widget.label,
-          style: const TextStyle(
-            color: Color(0xFF506D54),
-            fontSize: 11,
+          style: TextStyle(
+            color: const Color(0xFF506D54),
+            fontSize: widget.large ? 13 : 11,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -655,7 +852,10 @@ class _CoordinateFieldState extends State<_CoordinateField> {
               borderSide: BorderSide(color: Color(0xFF0F6B2F), width: 2),
             ),
           ),
-          style: const TextStyle(color: Color(0xFF1A3320), fontSize: 13),
+          style: TextStyle(
+            color: const Color(0xFF1A3320),
+            fontSize: widget.large ? 16 : 13,
+          ),
         ),
       ],
     );

@@ -1,21 +1,16 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 
 class ProfileService {
   ProfileService._();
 
-  /* This asks the backend for a user's personal info, like their name,
-  birthday, address, and so on, using their user id. This works the
-  same for patients, doctors, and secretaries. */
+  /// A user's personal info. Works for any role.
   static Future<Map<String, dynamic>> getProfile(int userId) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/profile/get_profile.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 
@@ -28,11 +23,8 @@ class ProfileService {
     return body['profile'] as Map<String, dynamic>;
   }
 
-  /* This saves changes to a user's personal info back to the database.
-  All the fields are sent together every time, even the ones that did
-  not change, and the backend just overwrites the old values with these
-  new ones. It sends back the updated profile so the screen can refresh
-  and show the saved info right away. */
+  /// Saves the user's personal info. All fields are sent every time and
+  /// replace the old values. Returns the updated profile.
   static Future<Map<String, dynamic>> updateProfile({
     required int userId,
     required String firstName,
@@ -50,9 +42,8 @@ class ProfileService {
       '${ApiConfig.baseUrl}/api/profile/update_profile.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'user_id': userId,
         'first_name': firstName,

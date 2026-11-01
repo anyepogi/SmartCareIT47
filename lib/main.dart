@@ -39,12 +39,35 @@ import 'screens/terms_condition_role.dart';
 import 'screens/user_management.dart';
 import 'screens/visit_history_screen.dart';
 import 'screens/welcome_screen.dart';
+import 'services/api_config.dart';
 import 'services/notifications/appointment_reminder_service.dart';
 import 'services/navigation_transitions.dart';
 import 'state/app_session.dart';
 
+final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<ScaffoldMessengerState> _messengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
+/// Runs when the backend rejects the saved login token (expired, signed
+/// out, or password changed): clears the session and returns to Sign In.
+/// Several requests can fail at once, so only the first one acts.
+Future<void> _handleSessionExpired() async {
+  if (!SmartCareSession.isLoggedIn) return;
+  await SmartCareSession.clearSession();
+  _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+    '/sign-in',
+    (route) => false,
+  );
+  _messengerKey.currentState?.showSnackBar(
+    const SnackBar(
+      content: Text('Your session has expired. Please sign in again.'),
+    ),
+  );
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ApiConfig.onUnauthorized = () => unawaited(_handleSessionExpired());
   final loggedIn = await SmartCareSession.restoreSession();
   final initialRoute = loggedIn
       ? SmartCareSession.currentRole.dashboardRoute
@@ -66,6 +89,8 @@ class SmartCareApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,
+      scaffoldMessengerKey: _messengerKey,
       debugShowCheckedModeBanner: false,
       title: 'SmartCare',
       theme: _buildTheme(),
@@ -103,7 +128,6 @@ class SmartCareApp extends StatelessWidget {
       '/cancelled',
       '/confirm',
       '/upcoming-appointments',
-      '/chatbot',
       '/privacy-security',
       '/notification-settings',
       '/change-password',

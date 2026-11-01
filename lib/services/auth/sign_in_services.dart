@@ -1,27 +1,20 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 
 class SignInService {
   SignInService._();
 
-  /* This sends the email and password the user typed to the backend to
-  check if they are correct. The backend checks the password against
-  the encrypted one saved in the database. If they match, it sends back
-  the user's account info (id, name, role, and so on) so the app can log
-  them in. If they do not match, it throws an error with a message like
-  "Invalid email or password." */
+  /// Logs in with email and password. Returns the account info, or throws
+  /// the backend's message (e.g. "Invalid email or password.").
   static Future<Map<String, dynamic>> login({
     required String email,
     required String password,
   }) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/login.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'password': password}),
     );
 
@@ -32,5 +25,17 @@ class SignInService {
     }
 
     return body['user'] as Map<String, dynamic>;
+  }
+
+  /// Deletes this token on the backend. Errors are ignored since the app
+  /// clears its own session anyway. The token is passed in because the
+  /// session is usually already cleared when this runs.
+  static Future<void> logout(String token) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/logout.php');
+    try {
+      await ApiConfig.post(uri, headers: {'X-Auth-Token': token});
+    } catch (_) {
+      // The session is already cleared on this device.
+    }
   }
 }

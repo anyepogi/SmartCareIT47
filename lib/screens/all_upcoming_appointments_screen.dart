@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/location_schedule.dart';
 import '../services/appointment/appointment_service.dart';
 import '../services/navigation_transitions.dart';
 import '../services/notifications/appointment_reminder_service.dart';
@@ -22,10 +23,10 @@ const List<String> _monthNames = [
   "December",
 ];
 
-String _formatDateTime(String isoDate, String timeSlot) {
+String _formatDateTime(String isoDate, String sessionTime) {
   final date = DateTime.tryParse(isoDate);
-  if (date == null) return "$isoDate at $timeSlot";
-  return "${_monthNames[date.month - 1]} ${date.day}, ${date.year} at $timeSlot";
+  if (date == null) return "$isoDate, $sessionTime";
+  return "${_monthNames[date.month - 1]} ${date.day}, ${date.year}, $sessionTime";
 }
 
 class AllUpcomingAppointmentsScreen extends StatefulWidget {
@@ -144,6 +145,9 @@ class _AllUpcomingAppointmentsScreenState
     return Column(
       children: _appointments.map((appt) {
         final isCancelling = _cancellingId == appt['appointment_id'];
+        // Sent to the doctor or with the doctor now: only staff can
+        // cancel it, so the Cancel button is hidden.
+        final withDoctor = isAppointmentWithDoctor(appt);
         return Container(
           width: double.infinity,
           margin: const EdgeInsets.only(bottom: 12),
@@ -174,7 +178,7 @@ class _AllUpcomingAppointmentsScreenState
                         Text(
                           _formatDateTime(
                             appt['schedule_date'] as String,
-                            appt['time_slot'] as String,
+                            appointmentTimeLabel(appt),
                           ),
                           style: const TextStyle(
                             color: Color(0xFF1A3320),
@@ -184,7 +188,8 @@ class _AllUpcomingAppointmentsScreenState
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          appt['location'] as String,
+                          "${appt['location']} • Queue No. "
+                          "${appointmentQueueLabel(appt)}",
                           style: const TextStyle(
                             color: Color(0xFF506D54),
                             fontSize: 12,
@@ -208,11 +213,12 @@ class _AllUpcomingAppointmentsScreenState
                             builder: (_) => AppointmentConfirmScreen(
                               dateTime: _formatDateTime(
                                 appt['schedule_date'] as String,
-                                appt['time_slot'] as String,
+                                appointmentTimeLabel(appt),
                               ),
                               appointmentId:
                                   appt['reference_no'] as String? ?? '',
                               location: appt['location'] as String,
+                              queueCode: appt['queue_code'] as String?,
                               isExistingView: true,
                             ),
                           ),
@@ -228,22 +234,32 @@ class _AllUpcomingAppointmentsScreenState
                       child: const Text("View Details"),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: isCancelling ? null : () => _cancel(appt),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFD32F2F),
-                        side: const BorderSide(color: Color(0xFFD32F2F)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                  if (!withDoctor) ...[
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: isCancelling ? null : () => _cancel(appt),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFD32F2F),
+                          side: const BorderSide(color: Color(0xFFD32F2F)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
+                        child: Text(isCancelling ? "Cancelling..." : "Cancel"),
                       ),
-                      child: Text(isCancelling ? "Cancelling..." : "Cancel"),
                     ),
-                  ),
+                  ],
                 ],
               ),
+              if (withDoctor) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  "You're already with the doctor, so this appointment can't "
+                  "be cancelled. Please talk to the clinic staff.",
+                  style: TextStyle(color: Color(0xFF506D54), fontSize: 11),
+                ),
+              ],
             ],
           ),
         );

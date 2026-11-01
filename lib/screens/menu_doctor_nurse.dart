@@ -27,11 +27,17 @@ Future<void> _clearDoctorAvailabilityOnLogout() async {
   }
 }
 
+/// Tablet/desktop layouts (wider than 800px) get a 900px container and larger
+/// text; phones keep their original sizes.
+bool _isTablet(BuildContext context) => MediaQuery.sizeOf(context).width > 800;
+
 class MenuDoctorNursePage extends StatelessWidget {
   const MenuDoctorNursePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final tablet = _isTablet(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFE8F2E4),
       bottomNavigationBar: const SmartCareBottomNav(
@@ -43,26 +49,17 @@ class MenuDoctorNursePage extends StatelessWidget {
             children: [
               const _MenuHeader(),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 26),
+                padding: tablet
+                    ? const EdgeInsets.symmetric(horizontal: 24, vertical: 16)
+                    : const EdgeInsets.fromLTRB(16, 20, 16, 26),
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 720),
+                    constraints: BoxConstraints(maxWidth: tablet ? 900 : 720),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // MAIN Section
-                        const Padding(
-                          padding: EdgeInsets.fromLTRB(0, 0, 0, 12),
-                          child: Text(
-                            'MAIN',
-                            style: TextStyle(
-                              color: Color(0xFF6E8D73),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
+                        const _MenuSectionTitle("MAIN", isFirst: true),
                         const _MenuItem(
                           icon: Icons.dashboard_rounded,
                           title: "Dashboard",
@@ -140,10 +137,10 @@ class MenuDoctorNursePage extends StatelessWidget {
                           subtitle: "Read our terms and conditions",
                           routeName: '/terms-role',
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: tablet ? 32 : 24),
                         SizedBox(
                           width: double.infinity,
-                          height: 48,
+                          height: tablet ? 52 : 48,
                           child: ElevatedButton(
                             onPressed: () async {
                               final shouldSignOut =
@@ -162,18 +159,23 @@ class MenuDoctorNursePage extends StatelessWidget {
                               backgroundColor: const Color(0xFF146F1B),
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(
+                                  tablet ? 16 : 10,
+                                ),
                               ),
                               elevation: 2,
                               shadowColor: const Color(
                                 0xFF146F1B,
                               ).withOpacity(0.3),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Sign Out',
                               style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                                fontSize: tablet ? 17 : 14,
+                                fontWeight: tablet
+                                    ? FontWeight.bold
+                                    : FontWeight.w600,
                               ),
                             ),
                           ),
@@ -204,14 +206,33 @@ class _MenuHeader extends StatelessWidget {
 }
 
 class _MenuSectionTitle extends StatelessWidget {
-  const _MenuSectionTitle(this.title);
+  const _MenuSectionTitle(this.title, {this.isFirst = false});
 
   final String title;
 
+  /// The first section sits right under the page padding, so it gets less
+  /// top space than the sections below it.
+  final bool isFirst;
+
   @override
   Widget build(BuildContext context) {
+    if (_isTablet(context)) {
+      return Padding(
+        padding: EdgeInsets.only(top: isFirst ? 8 : 24, bottom: 10),
+        child: Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xFF006D38),
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+        ),
+      );
+    }
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 20, 0, 12),
+      padding: EdgeInsets.fromLTRB(0, isFirst ? 0 : 20, 0, 12),
       child: Text(
         title,
         style: const TextStyle(
@@ -241,6 +262,8 @@ class _MenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tablet = _isTablet(context);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -261,39 +284,54 @@ class _MenuItem extends StatelessWidget {
           onTap: () => _navigate(context, routeName, roleToSet: roleToSet),
           borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: EdgeInsets.symmetric(
+              horizontal: tablet ? 20 : 16,
+              vertical: 14,
+            ),
             child: Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: tablet ? 46 : 40,
+                  height: tablet ? 46 : 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFECF1EE),
-                    borderRadius: BorderRadius.circular(8),
+                    color: tablet
+                        ? const Color(0xFFEAF7EA)
+                        : const Color(0xFFECF1EE),
+                    borderRadius: BorderRadius.circular(tablet ? 12 : 8),
                   ),
                   child: Center(
-                    child: Icon(icon, color: const Color(0xFF146F1B), size: 20),
+                    child: Icon(
+                      icon,
+                      color: const Color(0xFF146F1B),
+                      size: tablet ? 25 : 20,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: tablet ? 16 : 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
-                          color: Color(0xFF1A3320),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                        style: TextStyle(
+                          color: tablet
+                              ? Colors.black87
+                              : const Color(0xFF1A3320),
+                          fontSize: tablet ? 18 : 14,
+                          fontWeight: tablet
+                              ? FontWeight.bold
+                              : FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: tablet ? 3 : 2),
                       Text(
                         subtitle,
-                        style: const TextStyle(
-                          color: Color(0xFF6E8D73),
-                          fontSize: 12,
+                        style: TextStyle(
+                          color: tablet
+                              ? Colors.black54
+                              : const Color(0xFF6E8D73),
+                          fontSize: tablet ? 14 : 12,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
@@ -301,10 +339,12 @@ class _MenuItem extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(
+                Icon(
                   Icons.chevron_right,
-                  color: Color(0xFF6E8D73),
-                  size: 20,
+                  color: tablet
+                      ? Colors.grey.shade400
+                      : const Color(0xFF6E8D73),
+                  size: tablet ? 22 : 20,
                 ),
               ],
             ),

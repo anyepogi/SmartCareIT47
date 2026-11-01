@@ -1,6 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
+import '../services/api_config.dart';
 import '../services/auth/session_service.dart';
+import '../services/auth/sign_in_services.dart';
+import '../services/geofence/location_tracker.dart';
+import '../services/geofence/travel_tracker.dart';
 import 'notification_center.dart';
 
 enum UserRole {
@@ -108,6 +114,8 @@ class SmartCareSession {
     currentUserEmail = user['email'] as String?;
     currentUserFirstName = user['first_name'] as String?;
     currentUserLastName = user['last_name'] as String?;
+    final token = user['token'] as String? ?? '';
+    ApiConfig.authToken = token.isEmpty ? null : token;
 
     final roleString = user['role'] as String? ?? 'patient';
     switch (roleString) {
@@ -127,6 +135,7 @@ class SmartCareSession {
       firstName: currentUserFirstName ?? '',
       lastName: currentUserLastName ?? '',
       role: roleString,
+      token: token,
     );
   }
 
@@ -142,6 +151,7 @@ class SmartCareSession {
     currentUserEmail = saved['email'] as String;
     currentUserFirstName = saved['first_name'] as String;
     currentUserLastName = saved['last_name'] as String;
+    ApiConfig.authToken = saved['token'] as String;
 
     switch (saved['role']) {
       case 'doctor':
@@ -157,8 +167,23 @@ class SmartCareSession {
     return true;
   }
 
-  /// Clears the saved session and logs the user out.
+  /// Clears the saved session and logs the user out, and asks the backend
+  /// to delete the login token so it can't be reused.
   static Future<void> clearSession() async {
+    // Turn off GPS tracking (and its Android "Tracking your location"
+    // notification) if it is still on, for example a secretary who
+    // started tracking for the doctor. This runs before the token is
+    // cleared, because stopping reports the exit to the server.
+    if (LocationTracker.instance.isTracking.value) {
+      try {
+        await LocationTracker.instance.stop();
+      } catch (_) {
+        // Logout should never be blocked by this failing.
+      }
+    }
+
+    final token = ApiConfig.authToken;
+    ApiConfig.authToken = null;
     currentUserId = null;
     currentUserEmail = null;
     currentUserFirstName = null;
@@ -167,8 +192,14 @@ class SmartCareSession {
     medicalInfo = {};
     switchRole(UserRole.patient);
     NotificationCenter.reset();
+    // Stop reporting the doctor's travel ETA so it doesn't keep running
+    // (or leak into) the next account that signs in on this phone.
+    TravelTracker.instance.reset();
 
     await SessionService.clear();
+    if (token != null) {
+      unawaited(SignInService.logout(token));
+    }
   }
 
   static void updatePersonalInfo(String field, String value) {

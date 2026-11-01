@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
 
+import '../data/location_schedule.dart';
 import '../services/appointment/appointment_service.dart';
 import '../state/app_session.dart';
 import '../widgets/smartcare_bottom_nav.dart';
 import '../widgets/smartcare_dashboard_header.dart';
 
 const List<String> _monthNames = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
-String _formatVisitDate(String isoDate, String timeSlot) {
+String _formatVisitDate(String isoDate, String queueLabel) {
   final date = DateTime.tryParse(isoDate);
-  if (date == null) return "$isoDate - $timeSlot";
-  return "${_monthNames[date.month - 1]} ${date.day}, ${date.year} - $timeSlot";
+  if (date == null) return "$isoDate - $queueLabel";
+  return "${_monthNames[date.month - 1]} ${date.day}, ${date.year} - $queueLabel";
 }
 
 String _initialsFor(String name) {
@@ -31,6 +42,28 @@ class VisitHistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final role = SmartCareSession.currentRole;
     final isStaff = role.canSwitchStaffRole;
+    // Tablets (wider than 800px) get a centered 900px column with all text
+    // 20% larger; phones keep the original layout.
+    final tablet = MediaQuery.sizeOf(context).width > 800;
+    final Widget history = isStaff
+        ? const _StaffVisitHistory()
+        : const _PatientVisitHistory();
+    final Widget content = tablet
+        ? Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 900),
+                child: MediaQuery(
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(textScaler: const TextScaler.linear(1.2)),
+                  child: history,
+                ),
+              ),
+            ),
+          )
+        : Padding(padding: const EdgeInsets.all(15), child: history);
 
     return Scaffold(
       backgroundColor: const Color(0xFFE8F2E4),
@@ -47,12 +80,7 @@ class VisitHistoryScreen extends StatelessWidget {
                     ? 'See which patients visited the clinic and where they were served.'
                     : 'Review your clinic visits and completed checkups.',
               ),
-              Padding(
-                padding: const EdgeInsets.all(15),
-                child: isStaff
-                    ? const _StaffVisitHistory()
-                    : const _PatientVisitHistory(),
-              ),
+              content,
             ],
           ),
         ),
@@ -116,7 +144,8 @@ class _StaffVisitHistoryState extends State<_StaffVisitHistory> {
         _SummaryCard(
           icon: Icons.groups,
           value: _visits.length.toString(),
-          label: 'Patient visits across $clinicCount clinic branch'
+          label:
+              'Patient visits across $clinicCount clinic branch'
               '${clinicCount == 1 ? '' : 'es'}',
         ),
         const SizedBox(height: 14),
@@ -142,7 +171,7 @@ class _StaffVisitHistoryState extends State<_StaffVisitHistory> {
               subtitle: visit['location'] as String,
               date: _formatVisitDate(
                 visit['schedule_date'] as String,
-                visit['time_slot'] as String,
+                "Queue No. ${appointmentQueueLabel(visit)}",
               ),
               status: 'Completed',
             ),
@@ -176,9 +205,7 @@ class _PatientVisitHistoryState extends State<_PatientVisitHistory> {
       return;
     }
     try {
-      final visits = await AppointmentService.getVisitHistory(
-        userId: userId,
-      );
+      final visits = await AppointmentService.getVisitHistory(userId: userId);
       if (!mounted) return;
       setState(() {
         _visits = visits;
@@ -219,7 +246,7 @@ class _PatientVisitHistoryState extends State<_PatientVisitHistory> {
               subtitle: visit['reference_no'] as String? ?? '',
               date: _formatVisitDate(
                 visit['schedule_date'] as String,
-                visit['time_slot'] as String,
+                "Queue No. ${appointmentQueueLabel(visit)}",
               ),
               status: 'Completed',
               useClinicIcon: true,

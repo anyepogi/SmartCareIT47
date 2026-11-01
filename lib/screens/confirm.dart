@@ -7,6 +7,7 @@ class AppointmentConfirmScreen extends StatelessWidget {
     this.patientName = "Patient",
     this.appointmentId = "APT123456",
     this.location = "Sta. Rita",
+    this.queueCode,
     this.isExistingView = false,
   });
 
@@ -15,13 +16,17 @@ class AppointmentConfirmScreen extends StatelessWidget {
   final String appointmentId;
   final String location;
 
+  /// The patient's place in line, like SO3. Null for old appointments
+  /// booked before queue numbers.
+  final String? queueCode;
+
   /// True when this screen is opened to view an appointment the patient
   /// already booked earlier, instead of right after a fresh booking.
   final bool isExistingView;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: const Color(0xFFE8F2E4),
       body: SafeArea(
         child: Column(
@@ -40,103 +45,18 @@ class AppointmentConfirmScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Checkmark Icon
+                          // Calendar check icon (matches Book Appointment action)
                           Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE6F9E6),
-                              borderRadius: BorderRadius.circular(30),
+                            width: 90,
+                            height: 90,
+                            decoration: const BoxDecoration(
+                              color: Color.fromARGB(255, 200, 226, 186),
+                              shape: BoxShape.circle,
                             ),
-                            child: Center(
-                              child: SizedBox(
-                                width: 40,
-                                height: 40,
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    DecoratedBox(
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFF0DA94C),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const SizedBox(
-                                        width: 40,
-                                        height: 40,
-                                        child: Center(
-                                          child: Icon(
-                                            Icons.calendar_today,
-                                            color: Colors.white,
-                                            size: 27,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      right: 0,
-                                      bottom: 0,
-                                      child: DecoratedBox(
-                                        decoration: const BoxDecoration(
-                                          color: Colors.white,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: Center(
-                                            child: SizedBox(
-                                              width: 10,
-                                              height: 10,
-                                              child: Stack(
-                                                children: [
-                                                  Positioned(
-                                                    left: 1,
-                                                    top: 4,
-                                                    child: Transform.rotate(
-                                                      angle: -0.75,
-                                                      child: const SizedBox(
-                                                        width: 2,
-                                                        height: 5,
-                                                        child: DecoratedBox(
-                                                          decoration:
-                                                              BoxDecoration(
-                                                                color: Color(
-                                                                  0xFF0DA94C,
-                                                                ),
-                                                              ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Positioned(
-                                                    left: 4,
-                                                    top: 1,
-                                                    child: Transform.rotate(
-                                                      angle: 0.75,
-                                                      child: const SizedBox(
-                                                        width: 2,
-                                                        height: 8,
-                                                        child: DecoratedBox(
-                                                          decoration:
-                                                              BoxDecoration(
-                                                                color: Color(
-                                                                  0xFF0DA94C,
-                                                                ),
-                                                              ),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            child: const Icon(
+                              Icons.event_available,
+                              color: Color(0xFF147C28),
+                              size: 50,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -155,7 +75,7 @@ class AppointmentConfirmScreen extends StatelessWidget {
                           Text(
                             isExistingView
                                 ? "You already have a booked appointment. Cancel it first if you'd like to book a different one."
-                                : "Your appointment is confirmed. Kindly arrive before the scheduled time.",
+                                : "Your appointment is confirmed. Patients are served in order of their queue number, so kindly arrive before the clinic opens.",
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: Color(0xFF6E8D73),
@@ -208,12 +128,19 @@ class AppointmentConfirmScreen extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 16),
+                                if (queueCode != null) ...[
+                                  _DetailRow(
+                                    label: "Queue Number",
+                                    value: queueCode!,
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
                                 // Location
                                 _DetailRow(label: "Location", value: location),
                                 const SizedBox(height: 12),
                                 // Date & Time
                                 _DetailRow(
-                                  label: "Date & Time",
+                                  label: "Date & Session",
                                   value: dateTime,
                                 ),
                                 const SizedBox(height: 12),
@@ -225,7 +152,7 @@ class AppointmentConfirmScreen extends StatelessWidget {
                                 const SizedBox(height: 12),
                                 // Appointment ID
                                 _DetailRow(
-                                  label: "Appointment ID",
+                                  label: "Reference No.",
                                   value: appointmentId,
                                 ),
                               ],
@@ -272,6 +199,16 @@ class AppointmentConfirmScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+
+    // Tablets (wider than 800px) show all text 15% larger; phones are
+    // unchanged.
+    if (MediaQuery.sizeOf(context).width <= 800) return scaffold;
+    return MediaQuery(
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: const TextScaler.linear(1.15)),
+      child: scaffold,
     );
   }
 }

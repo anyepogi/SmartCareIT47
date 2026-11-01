@@ -4,6 +4,16 @@ import '../state/app_session.dart';
 import '../state/notification_center.dart';
 import 'smartcare_bottom_nav.dart';
 
+/// "Good morning" before 12 noon, "Good afternoon" until 6 PM, and
+/// "Good evening" after that, by the phone's clock. Used by the patient,
+/// doctor, and secretary dashboard headers.
+String timeOfDayGreeting([DateTime? now]) {
+  final hour = (now ?? DateTime.now()).hour;
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
 class SmartCareDashboardHeader extends StatelessWidget {
   const SmartCareDashboardHeader({
     super.key,
@@ -23,17 +33,23 @@ class SmartCareDashboardHeader extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 380;
-        final horizontalPadding = compact ? 10.0 : 18.0;
-        final titleTopPadding = compact ? 19.0 : 22.0;
-        final bottomPadding = compact ? 30.0 : 34.0;
+        // Tablets (wider than 800px) get a slightly shorter header with
+        // larger text and a bigger bell; phones keep their exact layout.
+        final tablet = MediaQuery.sizeOf(context).width > 800;
+        final horizontalPadding = tablet ? 24.0 : (compact ? 10.0 : 18.0);
+        final titleTopPadding = tablet ? 14.0 : (compact ? 19.0 : 22.0);
+        final bottomPadding = tablet ? 0.0 : (compact ? 30.0 : 34.0);
 
         return Container(
           width: double.infinity,
-          height: 175,
-          decoration: const BoxDecoration(
+          height: tablet ? 155 : 175,
+          decoration: BoxDecoration(
             image: DecorationImage(
-              image: AssetImage("assets/headnav.png"),
+              image: const AssetImage("assets/headnav.png"),
               fit: BoxFit.cover,
+              // Tablets trim the shorter header from the bottom so the
+              // artwork's top edge stays where it was.
+              alignment: tablet ? Alignment.topCenter : Alignment.center,
             ),
           ),
           child: Column(
@@ -48,7 +64,7 @@ class SmartCareDashboardHeader extends StatelessWidget {
                   6,
                 ),
                 child: SizedBox(
-                  height: 30,
+                  height: tablet ? 40 : 30,
                   child: Row(
                     children: [
                       if (onBack != null)
@@ -69,21 +85,21 @@ class SmartCareDashboardHeader extends StatelessWidget {
                           ),
                         ),
                       if (onBack != null) const SizedBox(width: 6),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           "SmartCare",
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: tablet ? 21 : 18,
                             fontWeight: FontWeight.w700,
                             height: 1.0,
                           ),
                         ),
                       ),
                       if (showNotificationIcon)
-                        const _DashboardNotificationButton(),
+                        _DashboardNotificationButton(large: tablet),
                     ],
                   ),
                 ),
@@ -104,22 +120,24 @@ class SmartCareDashboardHeader extends StatelessWidget {
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 17,
+                        fontSize: tablet ? 24 : 17,
                         fontWeight: FontWeight.w700,
                         height: 1.08,
                       ),
                     ),
                     if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 5),
+                      SizedBox(height: tablet ? 6 : 5),
                       Text(
                         subtitle,
-                        maxLines: 2,
+                        // Tablets are wide enough for one line, which keeps
+                        // a two-line title inside the shorter header.
+                        maxLines: tablet ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFE8F7E8),
-                          fontSize: 13,
+                        style: TextStyle(
+                          color: const Color(0xFFE8F7E8),
+                          fontSize: tablet ? 15 : 13,
                           fontWeight: FontWeight.w400,
                           height: 1.18,
                         ),
@@ -137,14 +155,20 @@ class SmartCareDashboardHeader extends StatelessWidget {
 }
 
 class _DashboardNotificationButton extends StatelessWidget {
-  const _DashboardNotificationButton();
+  const _DashboardNotificationButton({this.large = false});
+
+  /// Tablet sizing: bigger bell, tap area and badge.
+  final bool large;
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
       tooltip: "Notifications",
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints.tightFor(width: 30, height: 30),
+      constraints: BoxConstraints.tightFor(
+        width: large ? 40 : 30,
+        height: large ? 40 : 30,
+      ),
       onPressed: () {
         final currentRole = SmartCareSession.currentRole;
         final route =
@@ -159,18 +183,18 @@ class _DashboardNotificationButton extends StatelessWidget {
           return Stack(
             clipBehavior: Clip.none,
             children: [
-              const Icon(
+              Icon(
                 Icons.notifications_none,
                 color: Colors.white,
-                size: 23,
+                size: large ? 30 : 23,
               ),
               if (unreadCount > 0)
                 Positioned(
                   right: -2,
                   top: -2,
                   child: Container(
-                    width: 14,
-                    height: 14,
+                    width: large ? 17 : 14,
+                    height: large ? 17 : 14,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: const Color(0xFFFF304B),
@@ -179,9 +203,9 @@ class _DashboardNotificationButton extends StatelessWidget {
                     ),
                     child: Text(
                       unreadCount > 9 ? '9+' : '$unreadCount',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 7,
+                        fontSize: large ? 8.5 : 7,
                         fontWeight: FontWeight.w800,
                         height: 1,
                       ),

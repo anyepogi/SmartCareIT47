@@ -1,29 +1,21 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 import 'resend_cooldown_exception.dart';
 
 class ForgotPasswordService {
   ForgotPasswordService._();
 
-  /* This sends a 4 digit code to the given email so the user can reset
-  their password. It is also used to send the code again if the user
-  did not get it. If the backend says to wait before sending again (this
-  happens if the user asks too many times too fast), it throws a
-  ResendCooldownException that tells the screen how many seconds are
-  left to wait. If no account uses that email, it throws a normal error.
-  When it works, it returns how many seconds the code will stay valid
-  for, so the screen can show a countdown. */
+  /// Emails a 4 digit reset code (also used for resend). Returns how many
+  /// seconds the code is valid. Throws ResendCooldownException if the user
+  /// has to wait before asking again.
   static Future<int> sendResetCode(String email) async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/auth/send_password_reset_code.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email}),
     );
 
@@ -43,11 +35,8 @@ class ForgotPasswordService {
     return (body['expires_in_seconds'] as num?)?.toInt() ?? 300;
   }
 
-  /* This checks if the code the user typed matches the code that was
-  emailed to them, and that it has not expired yet (codes expire after a
-  few minutes). If the code is correct and still valid, the backend
-  changes the account's password to newPassword. If the code is wrong,
-  expired, or was never sent, this throws an error explaining why. */
+  /// Checks the emailed code and sets the new password if the code is
+  /// correct and not expired. Throws if it's wrong or expired.
   static Future<void> resetPassword({
     required String email,
     required String code,
@@ -55,9 +44,8 @@ class ForgotPasswordService {
   }) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/reset_password.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'email': email,
         'code': code,

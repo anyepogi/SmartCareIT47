@@ -11,6 +11,7 @@ enum SmartCareBottomItem {
   profile,
   visits,
   menu,
+  chatbot,
 }
 
 class SmartCareBottomNav extends StatelessWidget {
@@ -26,6 +27,11 @@ class SmartCareBottomNav extends StatelessWidget {
       builder: (context, sessionRole, _) {
         final role = roleOverride ?? sessionRole;
         final actions = _actions(role);
+        // Doctor and secretary bars get bigger icons and labels on tablets
+        // (wider than 800px); phones and the patient bar stay compact.
+        final large =
+            role != UserRole.patient && MediaQuery.sizeOf(context).width > 800;
+        final radius = BorderRadius.circular(large ? 24 : 18);
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
@@ -35,12 +41,15 @@ class SmartCareBottomNav extends StatelessWidget {
               color: Colors.white,
               elevation: 10,
               shadowColor: const Color(0x330F6B2F),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: radius,
               child: Container(
-                height: 78,
+                height: large ? 80 : 78,
+                padding: large
+                    ? const EdgeInsets.symmetric(horizontal: 24, vertical: 8)
+                    : null,
                 decoration: BoxDecoration(
                   border: Border.all(color: const Color(0xFFD2E7D1)),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: radius,
                 ),
                 child: Row(
                   children: actions.map((action) {
@@ -56,11 +65,13 @@ class SmartCareBottomNav extends StatelessWidget {
                           ? _CenterNavButton(
                               action: action,
                               selected: selected,
+                              large: large,
                               onTap: () => _handleTap(context, action),
                             )
                           : _NavButton(
                               action: action,
                               selected: selected,
+                              large: large,
                               onTap: () => _handleTap(context, action),
                             ),
                     );
@@ -141,12 +152,12 @@ class SmartCareBottomNav extends StatelessWidget {
         routeName: role.dashboardRoute,
         roleToSet: role,
       ),
-      _BottomNavAction(
-        item: SmartCareBottomItem.profile,
-        icon: role == UserRole.patient ? Icons.person : Icons.badge,
-        label: "Profile",
-        routeName: '/profile',
-        roleToSet: role,
+      // Profile is still reachable from Menu and from the dashboard.
+      const _BottomNavAction(
+        item: SmartCareBottomItem.chatbot,
+        icon: Icons.smart_toy,
+        label: "AI Chat",
+        routeName: '/chatbot',
       ),
       const _BottomNavAction(
         item: SmartCareBottomItem.schedule,
@@ -220,11 +231,15 @@ class _NavButton extends StatelessWidget {
     required this.action,
     required this.selected,
     required this.onTap,
+    this.large = false,
   });
 
   final _BottomNavAction action;
   final bool selected;
   final VoidCallback onTap;
+
+  /// Tablet sizing for the doctor/secretary bar.
+  final bool large;
 
   @override
   Widget build(BuildContext context) {
@@ -243,14 +258,18 @@ class _NavButton extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(action.icon, color: color, size: selected ? 26 : 24),
-                  const SizedBox(height: 5),
+                  Icon(
+                    action.icon,
+                    color: color,
+                    size: large ? (selected ? 30 : 28) : (selected ? 26 : 24),
+                  ),
+                  SizedBox(height: large ? 4 : 5),
                   Text(
                     action.label,
                     maxLines: 1,
                     style: TextStyle(
                       color: color,
-                      fontSize: 11,
+                      fontSize: large ? 14 : 11,
                       fontWeight: selected ? FontWeight.bold : FontWeight.w600,
                     ),
                   ),
@@ -269,11 +288,15 @@ class _CenterNavButton extends StatelessWidget {
     required this.action,
     required this.selected,
     required this.onTap,
+    this.large = false,
   });
 
   final _BottomNavAction action;
   final bool selected;
   final VoidCallback onTap;
+
+  /// Tablet sizing for the doctor/secretary bar.
+  final bool large;
 
   @override
   Widget build(BuildContext context) {
@@ -291,10 +314,12 @@ class _CenterNavButton extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             Positioned(
-              top: -16,
+              // The bar's 8px tablet padding moves the button down, so it
+              // starts 8px higher to keep the same overlap.
+              top: large ? -24 : -16,
               child: Container(
-                width: 58,
-                height: 58,
+                width: large ? 62 : 58,
+                height: large ? 62 : 58,
                 decoration: BoxDecoration(
                   color: circleColor,
                   shape: BoxShape.circle,
@@ -307,11 +332,15 @@ class _CenterNavButton extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(action.icon, color: Colors.white, size: 27),
+                child: Icon(
+                  action.icon,
+                  color: Colors.white,
+                  size: large ? 31 : 27,
+                ),
               ),
             ),
             Positioned(
-              bottom: 9,
+              bottom: large ? 2 : 9,
               left: 4,
               right: 4,
               child: FittedBox(
@@ -321,7 +350,7 @@ class _CenterNavButton extends StatelessWidget {
                   maxLines: 1,
                   style: TextStyle(
                     color: circleColor,
-                    fontSize: 11,
+                    fontSize: large ? 14 : 11,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

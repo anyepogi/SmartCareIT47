@@ -53,8 +53,6 @@ class UserManagementScreen extends StatefulWidget {
 
 class _UserManagementScreenState extends State<UserManagementScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final ScrollController _tableHorizontalController = ScrollController();
-  final ScrollController _tableVerticalController = ScrollController();
 
   List<Map<String, dynamic>> _users = [];
   bool _isLoading = true;
@@ -354,9 +352,248 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   @override
   void dispose() {
     _searchController.dispose();
-    _tableHorizontalController.dispose();
-    _tableVerticalController.dispose();
     super.dispose();
+  }
+
+  // Fixed column widths keep the sticky header aligned with the rows.
+  static const List<(String, double)> _columns = [
+    ('USER ID', 80),
+    ('EMAIL', 220),
+    ('FULL NAME', 180),
+    ('CONTACT NUMBER', 150),
+    ('GENDER', 90),
+    ('ADDRESS', 180),
+    ('EMERGENCY NUMBER', 170),
+    ('ROLE', 120),
+    ('ACTION', 100),
+  ];
+
+  static const double _cellPadding = 10;
+
+  /// Tablets (wider than 800px) get larger table text.
+  bool get _tablet => MediaQuery.sizeOf(context).width > 800;
+
+  /// Tablet columns are a bit wider to fit the larger text.
+  double get _columnScale => _tablet ? 1.1 : 1.0;
+
+  double get _tableWidth =>
+      _columns.fold(0.0, (sum, column) => sum + column.$2) * _columnScale +
+      _cellPadding * 2 * _columns.length;
+
+  Widget _cell(int column, Widget child) {
+    return Container(
+      width: _columns[column].$2 * _columnScale + _cellPadding * 2,
+      padding: const EdgeInsets.symmetric(horizontal: _cellPadding),
+      alignment: Alignment.centerLeft,
+      child: child,
+    );
+  }
+
+  Widget _textCell(int column, String text) {
+    return _cell(
+      column,
+      Text(
+        text,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: _tablet ? 14.5 : 13),
+      ),
+    );
+  }
+
+  Widget _buildHeaderRow() {
+    return Container(
+      height: 56,
+      color: const Color(0xFFF6FBF5),
+      child: Row(
+        children: [
+          for (var i = 0; i < _columns.length; i++)
+            _cell(
+              i,
+              Text(
+                _columns[i].$1,
+                style: TextStyle(
+                  color: const Color(0xFF1A3320),
+                  fontSize: _tablet ? 14.5 : 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserRow(Map<String, dynamic> user) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 60),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFFE3EFE1))),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          _textCell(0, "${user['user_id']}"),
+          _textCell(1, user['email'] as String),
+          _textCell(2, user['full_name'] as String),
+          _textCell(3, user['contact_number'] as String),
+          _textCell(4, user['gender'] as String),
+          _textCell(5, user['address'] as String),
+          _textCell(6, user['emergency_contact'] as String),
+          _cell(
+            7,
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: _tablet ? 5 : 4,
+              ),
+              decoration: BoxDecoration(
+                color: _roleBackgroundColor(user['role'] as String),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                (user['role'] as String).toUpperCase(),
+                style: TextStyle(
+                  color: _roleTextColor(user['role'] as String),
+                  fontSize: _tablet ? 13 : 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          _cell(
+            8,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF006B2D),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _editUser(user),
+                      borderRadius: BorderRadius.circular(4),
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Icon(
+                          Icons.edit,
+                          color: Colors.white,
+                          size: _tablet ? 19 : 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC41C3B),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _deleteUser(user),
+                      borderRadius: BorderRadius.circular(4),
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Icon(
+                          Icons.delete,
+                          color: Colors.white,
+                          size: _tablet ? 19 : 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTable() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF006837)),
+      );
+    }
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_error!, style: const TextStyle(color: Colors.red)),
+            TextButton(onPressed: _load, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
+    final users = _filteredUsers;
+    if (users.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.people_outline, size: 48, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text(
+              'No users found',
+              style: TextStyle(color: Colors.grey[600], fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE3EFE1), width: 1),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth > _tableWidth
+              ? constraints.maxWidth
+              : _tableWidth;
+          // Header and rows share one horizontal scroll view so they move
+          // together; only the ListView scrolls vertically.
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: width,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeaderRow(),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: users.length,
+                      itemBuilder: (context, index) =>
+                          _buildUserRow(users[index]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -367,514 +604,63 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         currentItem: SmartCareBottomItem.profile,
       ),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final tableHeight = constraints.maxHeight > 360
-                ? constraints.maxHeight - 360
-                : 220.0;
-
-            return SingleChildScrollView(
-              child: Column(
-                children: [
-                  const SmartCareDashboardHeader(
-                    title: "User Management",
-                    subtitle: "Manage user accounts and roles.",
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 26),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1200),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            TextField(
-                              controller: _searchController,
-                              decoration: InputDecoration(
-                                hintText: 'Search by name, email, or phone...',
-                                hintStyle: const TextStyle(
-                                  color: Color(0xFFBBBBBB),
-                                  fontSize: 14,
-                                ),
-                                prefixIcon: const Icon(
-                                  Icons.search,
-                                  color: Color(0xFF6E8D73),
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFE0E0E0),
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFE0E0E0),
-                                  ),
-                                ),
-                                filled: true,
-                                fillColor: const Color(0xFFFAFAFA),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
-                                ),
+        child: Column(
+          children: [
+            const SmartCareDashboardHeader(
+              title: "User Management",
+              subtitle: "Manage user accounts and roles.",
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 26),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextField(
+                          controller: _searchController,
+                          style: TextStyle(fontSize: _tablet ? 16 : null),
+                          decoration: InputDecoration(
+                            hintText: 'Search by name, email, or phone...',
+                            hintStyle: TextStyle(
+                              color: const Color(0xFFBBBBBB),
+                              fontSize: _tablet ? 16 : 14,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              color: Color(0xFF6E8D73),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFE0E0E0),
                               ),
                             ),
-                            const SizedBox(height: 20),
-                            if (_isLoading)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 40),
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: Color(0xFF006837),
-                                  ),
-                                ),
-                              )
-                            else if (_error != null)
-                              Column(
-                                children: [
-                                  Text(
-                                    _error!,
-                                    style: const TextStyle(color: Colors.red),
-                                  ),
-                                  TextButton(
-                                    onPressed: _load,
-                                    child: const Text('Retry'),
-                                  ),
-                                ],
-                              )
-                            else if (_filteredUsers.isEmpty)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 40,
-                                ),
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.people_outline,
-                                      size: 48,
-                                      color: Colors.grey[300],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'No users found',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: const Color(0xFFE3EFE1),
-                                    width: 1,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0x0A000000),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Scrollbar(
-                                  controller: _tableHorizontalController,
-                                  thumbVisibility: true,
-                                  child: SingleChildScrollView(
-                                    controller: _tableHorizontalController,
-                                    scrollDirection: Axis.horizontal,
-                                    child: SizedBox(
-                                      child: Column(
-                                        children: [
-                                          DataTable(
-                                            headingRowColor:
-                                                WidgetStateColor.resolveWith(
-                                                  (states) =>
-                                                      const Color(0xFFF6FBF5),
-                                                ),
-                                            headingRowHeight: 56,
-                                            dataRowMinHeight: 0,
-                                            dataRowMaxHeight: 0,
-                                            columnSpacing: 20,
-                                            headingTextStyle: const TextStyle(
-                                              color: Color(0xFF1A3320),
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                            columns: const [
-                                              DataColumn(
-                                                label: Text('USER ID'),
-                                                columnWidth: FixedColumnWidth(
-                                                  90,
-                                                ),
-                                              ),
-                                              DataColumn(
-                                                label: Text('EMAIL'),
-                                                columnWidth: FixedColumnWidth(
-                                                  180,
-                                                ),
-                                              ),
-                                              DataColumn(
-                                                label: Text('FULL NAME'),
-                                                columnWidth: FixedColumnWidth(
-                                                  160,
-                                                ),
-                                              ),
-                                              DataColumn(
-                                                label: Text('CONTACT NUMBER'),
-                                                columnWidth: FixedColumnWidth(
-                                                  150,
-                                                ),
-                                              ),
-                                              DataColumn(
-                                                label: Text('GENDER'),
-                                                columnWidth: FixedColumnWidth(
-                                                  90,
-                                                ),
-                                              ),
-                                              DataColumn(
-                                                label: Text('ADDRESS'),
-                                                columnWidth: FixedColumnWidth(
-                                                  160,
-                                                ),
-                                              ),
-                                              DataColumn(
-                                                label: Text('EMERGENCY NUMBER'),
-                                                columnWidth: FixedColumnWidth(
-                                                  180,
-                                                ),
-                                              ),
-                                              DataColumn(
-                                                label: Text('ROLE'),
-                                                columnWidth: FixedColumnWidth(
-                                                  100,
-                                                ),
-                                              ),
-                                              DataColumn(
-                                                label: Text('ACTION'),
-                                                columnWidth: FixedColumnWidth(
-                                                  120,
-                                                ),
-                                              ),
-                                            ],
-                                            rows: const [],
-                                          ),
-                                          SizedBox(
-                                            height: tableHeight,
-                                            child: Scrollbar(
-                                              controller:
-                                                  _tableVerticalController,
-                                              thumbVisibility: true,
-                                              child: SingleChildScrollView(
-                                                controller:
-                                                    _tableVerticalController,
-                                                child: DataTable(
-                                                  headingRowColor:
-                                                      WidgetStateColor.resolveWith(
-                                                        (states) => const Color(
-                                                          0xFFF6FBF5,
-                                                        ),
-                                                      ),
-                                                  headingRowHeight: 0,
-                                                  dataRowMinHeight: 60,
-                                                  dataRowMaxHeight: 72,
-                                                  columnSpacing: 20,
-                                                  headingTextStyle:
-                                                      const TextStyle(
-                                                        color: Color(
-                                                          0xFF1A3320,
-                                                        ),
-                                                        fontSize: 13,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                      ),
-                                                  columns: const [
-                                                    DataColumn(
-                                                      label: Text('USER ID'),
-                                                      columnWidth:
-                                                          FixedColumnWidth(90),
-                                                    ),
-                                                    DataColumn(
-                                                      label: Text('EMAIL'),
-                                                      columnWidth:
-                                                          FixedColumnWidth(180),
-                                                    ),
-                                                    DataColumn(
-                                                      label: Text('FULL NAME'),
-                                                      columnWidth:
-                                                          FixedColumnWidth(160),
-                                                    ),
-                                                    DataColumn(
-                                                      label: Text(
-                                                        'CONTACT NUMBER',
-                                                      ),
-                                                      columnWidth:
-                                                          FixedColumnWidth(150),
-                                                    ),
-                                                    DataColumn(
-                                                      label: Text('GENDER'),
-                                                      columnWidth:
-                                                          FixedColumnWidth(90),
-                                                    ),
-                                                    DataColumn(
-                                                      label: Text('ADDRESS'),
-                                                      columnWidth:
-                                                          FixedColumnWidth(160),
-                                                    ),
-                                                    DataColumn(
-                                                      label: Text(
-                                                        'EMERGENCY NUMBER',
-                                                      ),
-                                                      columnWidth:
-                                                          FixedColumnWidth(180),
-                                                    ),
-                                                    DataColumn(
-                                                      label: Text('ROLE'),
-                                                      columnWidth:
-                                                          FixedColumnWidth(100),
-                                                    ),
-                                                    DataColumn(
-                                                      label: Text('ACTION'),
-                                                      columnWidth:
-                                                          FixedColumnWidth(120),
-                                                    ),
-                                                  ],
-                                                  rows: _filteredUsers.map((
-                                                    user,
-                                                  ) {
-                                                    return DataRow(
-                                                      cells: [
-                                                        DataCell(
-                                                          Text(
-                                                            "${user['user_id']}",
-                                                            style:
-                                                                const TextStyle(
-                                                                  fontSize: 13,
-                                                                ),
-                                                          ),
-                                                        ),
-                                                        DataCell(
-                                                          Text(
-                                                            user['email']
-                                                                as String,
-                                                            style:
-                                                                const TextStyle(
-                                                                  fontSize: 13,
-                                                                ),
-                                                          ),
-                                                        ),
-                                                        DataCell(
-                                                          Text(
-                                                            user['full_name']
-                                                                as String,
-                                                            style:
-                                                                const TextStyle(
-                                                                  fontSize: 13,
-                                                                ),
-                                                          ),
-                                                        ),
-                                                        DataCell(
-                                                          Text(
-                                                            user['contact_number']
-                                                                as String,
-                                                            style:
-                                                                const TextStyle(
-                                                                  fontSize: 13,
-                                                                ),
-                                                          ),
-                                                        ),
-                                                        DataCell(
-                                                          Text(
-                                                            user['gender']
-                                                                as String,
-                                                            style:
-                                                                const TextStyle(
-                                                                  fontSize: 13,
-                                                                ),
-                                                          ),
-                                                        ),
-                                                        DataCell(
-                                                          SizedBox(
-                                                            width: 160,
-                                                            child: Text(
-                                                              user['address']
-                                                                  as String,
-                                                              maxLines: 2,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                              style:
-                                                                  const TextStyle(
-                                                                    fontSize:
-                                                                        13,
-                                                                  ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        DataCell(
-                                                          Text(
-                                                            user['emergency_contact']
-                                                                as String,
-                                                            style:
-                                                                const TextStyle(
-                                                                  fontSize: 13,
-                                                                ),
-                                                          ),
-                                                        ),
-                                                        DataCell(
-                                                          Container(
-                                                            padding:
-                                                                const EdgeInsets.symmetric(
-                                                                  horizontal:
-                                                                      10,
-                                                                  vertical: 4,
-                                                                ),
-                                                            decoration: BoxDecoration(
-                                                              color:
-                                                                  _roleBackgroundColor(
-                                                                    user['role']
-                                                                        as String,
-                                                                  ),
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    4,
-                                                                  ),
-                                                            ),
-                                                            child: Text(
-                                                              (user['role']
-                                                                      as String)
-                                                                  .toUpperCase(),
-                                                              style: TextStyle(
-                                                                color: _roleTextColor(
-                                                                  user['role']
-                                                                      as String,
-                                                                ),
-                                                                fontSize: 11,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        DataCell(
-                                                          Row(
-                                                            mainAxisSize:
-                                                                MainAxisSize
-                                                                    .min,
-                                                            children: [
-                                                              Container(
-                                                                decoration: BoxDecoration(
-                                                                  color: const Color(
-                                                                    0xFF006B2D,
-                                                                  ),
-                                                                  borderRadius:
-                                                                      BorderRadius.circular(
-                                                                        4,
-                                                                      ),
-                                                                ),
-                                                                child: Material(
-                                                                  color: Colors
-                                                                      .transparent,
-                                                                  child: InkWell(
-                                                                    onTap: () =>
-                                                                        _editUser(
-                                                                          user,
-                                                                        ),
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                          4,
-                                                                        ),
-                                                                    child: const Padding(
-                                                                      padding:
-                                                                          EdgeInsets.all(
-                                                                            6,
-                                                                          ),
-                                                                      child: Icon(
-                                                                        Icons
-                                                                            .edit,
-                                                                        color: Colors
-                                                                            .white,
-                                                                        size:
-                                                                            16,
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                              const SizedBox(
-                                                                width: 8,
-                                                              ),
-                                                              Container(
-                                                                decoration: BoxDecoration(
-                                                                  color: const Color(
-                                                                    0xFFC41C3B,
-                                                                  ),
-                                                                  borderRadius:
-                                                                      BorderRadius.circular(
-                                                                        4,
-                                                                      ),
-                                                                ),
-                                                                child: Material(
-                                                                  color: Colors
-                                                                      .transparent,
-                                                                  child: InkWell(
-                                                                    onTap: () =>
-                                                                        _deleteUser(
-                                                                          user,
-                                                                        ),
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                          4,
-                                                                        ),
-                                                                    child: const Padding(
-                                                                      padding:
-                                                                          EdgeInsets.all(
-                                                                            6,
-                                                                          ),
-                                                                      child: Icon(
-                                                                        Icons
-                                                                            .delete,
-                                                                        color: Colors
-                                                                            .white,
-                                                                        size:
-                                                                            16,
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    );
-                                                  }).toList(),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: Color(0xFFE0E0E0),
                               ),
-                          ],
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFFFAFAFA),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 20),
+                        Expanded(child: _buildTable()),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
