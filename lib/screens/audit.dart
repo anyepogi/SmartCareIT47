@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import '../services/audit/audit_log_service.dart';
 import '../widgets/smartcare_bottom_nav.dart';
 import '../widgets/smartcare_dashboard_header.dart';
+<<<<<<< HEAD
 import '../widgets/synced_horizontal_scroll.dart';
 import '../widgets/smartcare_date_picker.dart';
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
 Color _actionColor(String action) {
   switch (action) {
@@ -30,6 +33,7 @@ String _formatDate(DateTime date) {
   return '$y-$m-$d';
 }
 
+<<<<<<< HEAD
 InputDecoration _filterDecoration({
   String? hintText,
   Widget? prefixIcon,
@@ -41,6 +45,12 @@ InputDecoration _filterDecoration({
       color: const Color(0xFFBBBBBB),
       fontSize: large ? 13.5 : 11.5,
     ),
+=======
+InputDecoration _filterDecoration({String? hintText, Widget? prefixIcon}) {
+  return InputDecoration(
+    hintText: hintText,
+    hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 11.5),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     prefixIcon: prefixIcon,
     prefixIconConstraints: const BoxConstraints(minWidth: 30, minHeight: 20),
     isDense: true,
@@ -58,10 +68,14 @@ InputDecoration _filterDecoration({
     ),
     filled: true,
     fillColor: const Color(0xFFFAFAFA),
+<<<<<<< HEAD
     contentPadding: EdgeInsets.symmetric(
       horizontal: 8,
       vertical: large ? 10 : 8,
     ),
+=======
+    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   );
 }
 
@@ -129,7 +143,10 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
   Future<void> _pickStartDate() async {
     final picked = await showDatePicker(
       context: context,
+<<<<<<< HEAD
       builder: smartCareDatePickerBuilder,
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       initialDate: _startDate ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
@@ -142,7 +159,10 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
   Future<void> _pickEndDate() async {
     final picked = await showDatePicker(
       context: context,
+<<<<<<< HEAD
       builder: smartCareDatePickerBuilder,
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       initialDate: _endDate ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
@@ -196,9 +216,15 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+<<<<<<< HEAD
           style: TextStyle(
             color: const Color(0xFF1A3320),
             fontSize: _tablet ? 13 : 10.5,
+=======
+          style: const TextStyle(
+            color: Color(0xFF1A3320),
+            fontSize: 10.5,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -208,9 +234,12 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
     );
   }
 
+<<<<<<< HEAD
   /// Tablets (wider than 800px) get larger filter and table text.
   bool get _tablet => MediaQuery.sizeOf(context).width > 800;
 
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   Widget _filterRow(Widget left, Widget right) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -242,6 +271,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
               label: 'Filter by name',
               child: TextField(
                 controller: _nameFilterController,
+<<<<<<< HEAD
                 style: TextStyle(fontSize: _tablet ? 14 : 12),
                 decoration: _filterDecoration(
                   large: _tablet,
@@ -249,6 +279,14 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                   prefixIcon: Icon(
                     Icons.search,
                     size: _tablet ? 18 : 16,
+=======
+                style: const TextStyle(fontSize: 12),
+                decoration: _filterDecoration(
+                  hintText: 'Enter a name',
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    size: 16,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                     color: Color(0xFF6E8D73),
                   ),
                 ),
@@ -261,16 +299,26 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                 borderRadius: BorderRadius.circular(8),
                 child: InputDecorator(
                   decoration: _filterDecoration(
+<<<<<<< HEAD
                     large: _tablet,
                     prefixIcon: Icon(
                       Icons.calendar_today,
                       size: _tablet ? 18 : 14,
+=======
+                    prefixIcon: const Icon(
+                      Icons.calendar_today,
+                      size: 14,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       color: Color(0xFF6E8D73),
                     ),
                   ),
                   child: Text(
                     _startDate == null ? 'Any' : _formatDate(_startDate!),
+<<<<<<< HEAD
                     style: TextStyle(fontSize: _tablet ? 14 : 12),
+=======
+                    style: const TextStyle(fontSize: 12),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                   ),
                 ),
               ),
@@ -281,6 +329,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
               label: 'Resource Type',
               child: DropdownButtonFormField<String>(
                 initialValue: _selectedResourceType,
+<<<<<<< HEAD
                 decoration: _filterDecoration(large: _tablet),
                 style: TextStyle(
                   fontSize: _tablet ? 14 : 12,
@@ -290,6 +339,11 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                   'All Types',
                   style: TextStyle(fontSize: _tablet ? 14 : 12),
                 ),
+=======
+                decoration: _filterDecoration(),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF1A3320)),
+                hint: const Text('All Types', style: TextStyle(fontSize: 12)),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                 items: [
                   const DropdownMenuItem<String>(
                     value: null,
@@ -315,16 +369,26 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                 borderRadius: BorderRadius.circular(8),
                 child: InputDecorator(
                   decoration: _filterDecoration(
+<<<<<<< HEAD
                     large: _tablet,
                     prefixIcon: Icon(
                       Icons.calendar_today,
                       size: _tablet ? 18 : 14,
+=======
+                    prefixIcon: const Icon(
+                      Icons.calendar_today,
+                      size: 14,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       color: Color(0xFF6E8D73),
                     ),
                   ),
                   child: Text(
                     _endDate == null ? 'Any' : _formatDate(_endDate!),
+<<<<<<< HEAD
                     style: TextStyle(fontSize: _tablet ? 14 : 12),
+=======
+                    style: const TextStyle(fontSize: 12),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                   ),
                 ),
               ),
@@ -335,6 +399,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
               label: 'Performed By',
               child: DropdownButtonFormField<String>(
                 initialValue: _selectedRole,
+<<<<<<< HEAD
                 decoration: _filterDecoration(large: _tablet),
                 style: TextStyle(
                   fontSize: _tablet ? 14 : 12,
@@ -344,6 +409,11 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                   'All Roles',
                   style: TextStyle(fontSize: _tablet ? 14 : 12),
                 ),
+=======
+                decoration: _filterDecoration(),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF1A3320)),
+                hint: const Text('All Roles', style: TextStyle(fontSize: 12)),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                 items: [
                   const DropdownMenuItem<String>(
                     value: null,
@@ -369,6 +439,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                 borderRadius: BorderRadius.circular(8),
                 child: InputDecorator(
                   decoration: _filterDecoration(
+<<<<<<< HEAD
                     large: _tablet,
                     prefixIcon: Icon(
                       Icons.refresh,
@@ -380,6 +451,18 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                     'Refresh',
                     style: TextStyle(
                       fontSize: _tablet ? 14 : 12,
+=======
+                    prefixIcon: const Icon(
+                      Icons.refresh,
+                      size: 16,
+                      color: Color(0xFF006837),
+                    ),
+                  ),
+                  child: const Text(
+                    'Refresh',
+                    style: TextStyle(
+                      fontSize: 12,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       color: Color(0xFF006837),
                       fontWeight: FontWeight.w600,
                     ),
@@ -423,17 +506,23 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
               visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: 8),
             ),
+<<<<<<< HEAD
             icon: Icon(Icons.clear, size: _tablet ? 18 : 15),
             label: Text(
               'Clear filters',
               style: TextStyle(fontSize: _tablet ? 14 : 12),
             ),
+=======
+            icon: const Icon(Icons.clear, size: 15),
+            label: const Text('Clear filters', style: TextStyle(fontSize: 12)),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           ),
         ],
       ),
     );
   }
 
+<<<<<<< HEAD
   // Fixed column widths keep the pinned header aligned with the rows.
   static const List<(String, double)> _columns = [
     ('User', 160),
@@ -698,6 +787,8 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
     ];
   }
 
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -706,6 +797,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
         currentItem: SmartCareBottomItem.profile,
       ),
       body: SafeArea(
+<<<<<<< HEAD
         child: CustomScrollView(
           slivers: [
             const SliverToBoxAdapter(
@@ -743,11 +835,262 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
               },
             ),
           ],
+=======
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const SmartCareDashboardHeader(
+                title: "Audit Logs",
+                subtitle: "View system activity and audit trail.",
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 26),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1400),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildFilterPanel(),
+                        _buildFilterActions(),
+                        if (_isLoading)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 60),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF006837),
+                              ),
+                            ),
+                          )
+                        else if (_error != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 40),
+                            child: Column(
+                              children: [
+                                Text(
+                                  _error!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Color(0xFF8B2F2F),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                ElevatedButton(
+                                  onPressed: _loadLogs,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF006837),
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          // Audit Logs Table
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFE3EFE1),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0x0A000000),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: IntrinsicWidth(
+                                child: Column(
+                                  children: [
+                                    DataTable(
+                                      headingRowColor:
+                                          WidgetStateColor.resolveWith(
+                                            (states) => const Color(0xFFF6FBF5),
+                                          ),
+                                      headingRowHeight: 56,
+                                      dataRowMinHeight: 64,
+                                      dataRowMaxHeight: 76,
+                                      columnSpacing: 20,
+                                      headingTextStyle: const TextStyle(
+                                        color: Color(0xFF1A3320),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                      columns: const [
+                                        DataColumn(label: Text('User')),
+                                        DataColumn(label: Text('Action')),
+                                        DataColumn(
+                                          label: Text('Resource Type'),
+                                        ),
+                                        DataColumn(label: Text('Description')),
+                                        DataColumn(label: Text('Timestamp')),
+                                      ],
+                                      rows: _logs.map((log) {
+                                        final actionColor = _actionColor(
+                                          log.action,
+                                        );
+                                        return DataRow(
+                                          cells: [
+                                            DataCell(
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    log.userName,
+                                                    style: const TextStyle(
+                                                      color: Color(0xFF1A3320),
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    log.role,
+                                                    style: const TextStyle(
+                                                      color: Color(0xFF6E8D73),
+                                                      fontSize: 10,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            DataCell(
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: actionColor.withValues(
+                                                    alpha: 0.12,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  log.action,
+                                                  style: TextStyle(
+                                                    color: actionColor,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            DataCell(
+                                              Text(
+                                                log.resourceType,
+                                                style: const TextStyle(
+                                                  color: Color(0xFF1A3320),
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ),
+                                            DataCell(
+                                              InkWell(
+                                                onTap: () =>
+                                                    _showFullDescription(log),
+                                                child: Container(
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                        maxWidth: 320,
+                                                      ),
+                                                  child: Text(
+                                                    log.description,
+                                                    style: const TextStyle(
+                                                      color: Color(0xFF1A3320),
+                                                      fontSize: 12,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 2,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            DataCell(
+                                              Text(
+                                                log.createdAt,
+                                                style: const TextStyle(
+                                                  color: Color(0xFF1A3320),
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      }).toList(),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 12),
+                                      child: Center(
+                                        child: Container(
+                                          width: 40,
+                                          height: 3,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFD0D7D0),
+                                            borderRadius: BorderRadius.circular(
+                                              2,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (!_isLoading && _error == null && _logs.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 40),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.history,
+                                  size: 48,
+                                  color: Colors.grey[300],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No logs found',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         ),
       ),
     );
   }
 }
+<<<<<<< HEAD
 
 class _AuditTableHeaderDelegate extends SliverPersistentHeaderDelegate {
   const _AuditTableHeaderDelegate({
@@ -785,3 +1128,5 @@ class _AuditTableHeaderDelegate extends SliverPersistentHeaderDelegate {
       oldDelegate.height != height ||
       oldDelegate.background != background;
 }
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a

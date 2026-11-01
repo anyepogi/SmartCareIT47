@@ -51,7 +51,11 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+<<<<<<< HEAD
   flutter_launcher_icons: ^0.13.1
+=======
+
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -96,6 +100,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+<<<<<<< HEAD
 
 
 flutter_launcher_icons:
@@ -105,3 +110,5 @@ flutter_launcher_icons:
   min_sdk_android: 21
   remove_alpha_ios: true
 
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a

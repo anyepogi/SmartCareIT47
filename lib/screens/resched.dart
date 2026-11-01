@@ -198,6 +198,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
   @override
   Widget build(BuildContext context) {
     final days = _visibleDays;
+<<<<<<< HEAD
     // Tablets get a wider 900px form, 28px title and roomier spacing.
     final isTablet = _isTablet(context);
     final gap = isTablet ? 18.0 : 14.0;
@@ -220,6 +221,8 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
         size: isTablet ? 28 : 24,
       ),
     );
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
     return Scaffold(
       backgroundColor: const Color(0xFFE8F2E4),
@@ -230,19 +233,29 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               child: Padding(
+<<<<<<< HEAD
                 padding: EdgeInsets.symmetric(
                   horizontal: isTablet ? 24 : 16,
+=======
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                   vertical: 24,
                 ),
                 child: Center(
                   child: ConstrainedBox(
+<<<<<<< HEAD
                     constraints: BoxConstraints(maxWidth: isTablet ? 900 : 600),
+=======
+                    constraints: const BoxConstraints(maxWidth: 600),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+<<<<<<< HEAD
                             // Back button above the title on phones; on
                             // tablets it sits in the screen's top-left corner.
                             if (!isTablet) ...[
@@ -257,6 +270,34 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
                                 style: TextStyle(
                                   color: const Color(0xFF006B2D),
                                   fontSize: isTablet ? 26 : 24,
+=======
+                            // Back button at top-left
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  smartCareRoute(
+                                    transition: SmartCareTransition.subPage,
+                                    builder: (context) =>
+                                        const appointmentScreen.AppointmentBookingScreen(),
+                                  ),
+                                );
+                              },
+                              child: const Icon(
+                                Icons.arrow_back,
+                                color: Color(0xFF1C5D22),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            // Title centered horizontally below the back button
+                            const Center(
+                              child: Text(
+                                "Reschedule Appointment",
+                                style: TextStyle(
+                                  color: Color(0xFF006B2D),
+                                  fontSize: 24,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -270,12 +311,20 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Padding(
+<<<<<<< HEAD
                             padding: EdgeInsets.all(isTablet ? 28 : 24),
+=======
+                            padding: const EdgeInsets.all(24),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const _SectionLabel("Select Location"),
+<<<<<<< HEAD
                                 SizedBox(height: labelGap),
+=======
+                                const SizedBox(height: 8),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                 _LocationSelector(
                                   locations: locations,
                                   selectedLocation: selectedLocation,
@@ -291,9 +340,15 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
                                     });
                                   },
                                 ),
+<<<<<<< HEAD
                                 SizedBox(height: gap),
                                 const _SectionLabel("Select Date"),
                                 SizedBox(height: labelGap),
+=======
+                                const SizedBox(height: 14),
+                                const _SectionLabel("Select Date"),
+                                const SizedBox(height: 8),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                 _DaySelector(
                                   days: days,
                                   selectedDate: selectedDate,
@@ -303,19 +358,34 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
                                     });
                                   },
                                 ),
+<<<<<<< HEAD
                                 SizedBox(height: gap),
                                 const _SectionLabel("Clinic Session"),
                                 SizedBox(height: labelGap),
+=======
+                                const SizedBox(height: 14),
+                                const _SectionLabel("Clinic Session"),
+                                const SizedBox(height: 8),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                 SessionInfoCard(
                                   location: selectedLocation ?? '',
                                   date: selectedDate,
                                 ),
+<<<<<<< HEAD
                                 SizedBox(height: gap),
                                 SizedBox(
                                   width: double.infinity,
                                   child: ConstrainedBox(
                                     constraints: BoxConstraints(
                                       minHeight: isTablet ? 50 : 48,
+=======
+                                const SizedBox(height: 14),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      minHeight: 48,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                     ),
                                     child: LoadingButton(
                                       isLoading: _isBooking,
@@ -336,6 +406,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
                                         ),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
+<<<<<<< HEAD
                                             isTablet ? 12 : 8,
                                           ),
                                         ),
@@ -345,6 +416,17 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontSize: isTablet ? 15 : 14,
+=======
+                                            8,
+                                          ),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        "Confirm Appointment",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -362,6 +444,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
               ),
             ),
           ),
+<<<<<<< HEAD
           if (isTablet)
             SafeArea(
               child: Padding(
@@ -369,6 +452,8 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
                 child: backButton,
               ),
             ),
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           if (_isBooking)
             Container(
               color: Colors.black.withOpacity(0.5),
@@ -403,10 +488,13 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
   }
 }
 
+<<<<<<< HEAD
 /// Tablet/desktop layouts (wider than 800px) get larger text and cards;
 /// phones keep their original sizes.
 bool _isTablet(BuildContext context) => MediaQuery.sizeOf(context).width > 800;
 
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.text);
 
@@ -416,9 +504,15 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
+<<<<<<< HEAD
       style: TextStyle(
         color: const Color(0xFF006B2D),
         fontSize: _isTablet(context) ? 18 : 16,
+=======
+      style: const TextStyle(
+        color: Color(0xFF006B2D),
+        fontSize: 16,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         fontWeight: FontWeight.bold,
       ),
     );
@@ -450,7 +544,11 @@ class _LocationSelector extends StatelessWidget {
             for (var index = 0; index < locations.length; index++) ...[
               SizedBox(
                 width: itemWidth,
+<<<<<<< HEAD
                 height: _isTablet(context) ? 48 : 44,
+=======
+                height: 44,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                 child: _LocationChip(
                   label: locations[index],
                   isSelected: locations[index] == selectedLocation,
@@ -505,10 +603,17 @@ class _LocationChip extends StatelessWidget {
               children: [
                 Icon(
                   Icons.location_on,
+<<<<<<< HEAD
                   size: _isTablet(context) ? 18 : 16,
                   color: isSelected ? Colors.white : const Color(0xFF006B2D),
                 ),
                 SizedBox(width: _isTablet(context) ? 6 : 4),
+=======
+                  size: 16,
+                  color: isSelected ? Colors.white : const Color(0xFF006B2D),
+                ),
+                const SizedBox(width: 4),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                 Flexible(
                   child: Text(
                     label,
@@ -518,7 +623,11 @@ class _LocationChip extends StatelessWidget {
                       color: isSelected
                           ? Colors.white
                           : const Color(0xFF006B2D),
+<<<<<<< HEAD
                       fontSize: _isTablet(context) ? 15 : 13,
+=======
+                      fontSize: 13,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -554,12 +663,17 @@ class _DaySelector extends StatelessWidget {
         final compact = constraints.maxWidth < 520;
         final gap = compact ? 10.0 : 14.0;
         final visibleItems = math.min(days.length, 7);
+<<<<<<< HEAD
         // Tablets (wider than 800px) use compact fixed-width cards, like
         // Book Appointment; phones keep cards that stretch to share the row.
         final itemWidth = _isTablet(context)
             ? 76.0
             : (constraints.maxWidth - (gap * (visibleItems - 1))) /
                   visibleItems;
+=======
+        final itemWidth =
+            (constraints.maxWidth - (gap * (visibleItems - 1))) / visibleItems;
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -568,7 +682,11 @@ class _DaySelector extends StatelessWidget {
               for (var index = 0; index < days.length; index++) ...[
                 SizedBox(
                   width: itemWidth.clamp(compact ? 44.0 : 68.0, 100.0),
+<<<<<<< HEAD
                   height: _isTablet(context) ? 88 : (compact ? 68 : 80),
+=======
+                  height: compact ? 68 : 80,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                   child: _DayCard(
                     day: days[index],
                     isSelected: _isSameDate(selectedDate, days[index].date),
@@ -633,7 +751,11 @@ class _DayCard extends StatelessWidget {
                         color: isSelected
                             ? Colors.white70
                             : const Color(0xFF6E8D73),
+<<<<<<< HEAD
                         fontSize: _isTablet(context) ? 11 : 9,
+=======
+                        fontSize: 9,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -643,7 +765,11 @@ class _DayCard extends StatelessWidget {
                         color: isSelected
                             ? Colors.white
                             : const Color(0xFF27943B),
+<<<<<<< HEAD
                         fontSize: _isTablet(context) ? 13 : 11,
+=======
+                        fontSize: 11,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -652,7 +778,11 @@ class _DayCard extends StatelessWidget {
                       day.day,
                       style: TextStyle(
                         color: isSelected ? Colors.white : Colors.black,
+<<<<<<< HEAD
                         fontSize: _isTablet(context) ? 21 : 16,
+=======
+                        fontSize: 16,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                         fontWeight: FontWeight.bold,
                         height: 1,
                       ),

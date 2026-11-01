@@ -7,9 +7,13 @@ import '../state/app_session.dart';
 import '../widgets/cancel_reason_dialog.dart';
 import '../widgets/smartcare_bottom_nav.dart';
 import '../widgets/smartcare_dashboard_header.dart';
+<<<<<<< HEAD
 import '../widgets/synced_horizontal_scroll.dart';
 import '../widgets/walk_in_dialog.dart';
 import '../widgets/smartcare_date_picker.dart';
+=======
+import '../widgets/walk_in_dialog.dart';
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
 const List<String> _filterableStatuses = [
   'booked',
@@ -25,6 +29,7 @@ String _formatFilterDate(DateTime date) {
   return '$y-$m-$d';
 }
 
+<<<<<<< HEAD
 InputDecoration _filterDecoration({
   String? hintText,
   Widget? prefixIcon,
@@ -36,6 +41,12 @@ InputDecoration _filterDecoration({
       color: const Color(0xFFBBBBBB),
       fontSize: large ? 13.5 : 11.5,
     ),
+=======
+InputDecoration _filterDecoration({String? hintText, Widget? prefixIcon}) {
+  return InputDecoration(
+    hintText: hintText,
+    hintStyle: const TextStyle(color: Color(0xFFBBBBBB), fontSize: 11.5),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     prefixIcon: prefixIcon,
     prefixIconConstraints: const BoxConstraints(minWidth: 30, minHeight: 20),
     isDense: true,
@@ -53,10 +64,14 @@ InputDecoration _filterDecoration({
     ),
     filled: true,
     fillColor: const Color(0xFFFAFAFA),
+<<<<<<< HEAD
     contentPadding: EdgeInsets.symmetric(
       horizontal: 8,
       vertical: large ? 10 : 8,
     ),
+=======
+    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   );
 }
 
@@ -341,7 +356,10 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
   Future<void> _pickStartDate() async {
     final picked = await showDatePicker(
       context: context,
+<<<<<<< HEAD
       builder: smartCareDatePickerBuilder,
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       initialDate: _startDate ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
@@ -353,7 +371,10 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
   Future<void> _pickEndDate() async {
     final picked = await showDatePicker(
       context: context,
+<<<<<<< HEAD
       builder: smartCareDatePickerBuilder,
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       initialDate: _endDate ?? DateTime.now(),
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
@@ -362,9 +383,12 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
     setState(() => _endDate = picked);
   }
 
+<<<<<<< HEAD
   /// Tablets (wider than 800px) get larger filter and table text.
   bool get _tablet => MediaQuery.sizeOf(context).width > 800;
 
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   Widget _filterField({required String label, required Widget child}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,9 +397,15 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
+<<<<<<< HEAD
           style: TextStyle(
             color: const Color(0xFF1A3320),
             fontSize: _tablet ? 13 : 10.5,
+=======
+          style: const TextStyle(
+            color: Color(0xFF1A3320),
+            fontSize: 10.5,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -415,6 +445,7 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
               label: 'Search Patient',
               child: TextField(
                 controller: _searchController,
+<<<<<<< HEAD
                 style: TextStyle(fontSize: _tablet ? 14 : 12),
                 decoration: _filterDecoration(
                   large: _tablet,
@@ -422,6 +453,14 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
                   prefixIcon: Icon(
                     Icons.search,
                     size: _tablet ? 18 : 16,
+=======
+                style: const TextStyle(fontSize: 12),
+                decoration: _filterDecoration(
+                  hintText: 'Name, Reference #, Contact, or Email',
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    size: 16,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                     color: Color(0xFF6E8D73),
                   ),
                 ),
@@ -434,16 +473,26 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
                 borderRadius: BorderRadius.circular(8),
                 child: InputDecorator(
                   decoration: _filterDecoration(
+<<<<<<< HEAD
                     large: _tablet,
                     prefixIcon: Icon(
                       Icons.calendar_today,
                       size: _tablet ? 18 : 14,
+=======
+                    prefixIcon: const Icon(
+                      Icons.calendar_today,
+                      size: 14,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       color: Color(0xFF6E8D73),
                     ),
                   ),
                   child: Text(
                     _startDate == null ? 'Any' : _formatFilterDate(_startDate!),
+<<<<<<< HEAD
                     style: TextStyle(fontSize: _tablet ? 14 : 12),
+=======
+                    style: const TextStyle(fontSize: 12),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                   ),
                 ),
               ),
@@ -454,6 +503,7 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
               label: 'Clinic',
               child: DropdownButtonFormField<String>(
                 initialValue: _selectedLocation,
+<<<<<<< HEAD
                 decoration: _filterDecoration(large: _tablet),
                 style: TextStyle(
                   fontSize: _tablet ? 14 : 12,
@@ -463,6 +513,11 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
                   'All Clinic',
                   style: TextStyle(fontSize: _tablet ? 14 : 12),
                 ),
+=======
+                decoration: _filterDecoration(),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF1A3320)),
+                hint: const Text('All Clinic', style: TextStyle(fontSize: 12)),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                 items: [
                   const DropdownMenuItem<String>(
                     value: null,
@@ -485,16 +540,26 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
                 borderRadius: BorderRadius.circular(8),
                 child: InputDecorator(
                   decoration: _filterDecoration(
+<<<<<<< HEAD
                     large: _tablet,
                     prefixIcon: Icon(
                       Icons.calendar_today,
                       size: _tablet ? 18 : 14,
+=======
+                    prefixIcon: const Icon(
+                      Icons.calendar_today,
+                      size: 14,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       color: Color(0xFF6E8D73),
                     ),
                   ),
                   child: Text(
                     _endDate == null ? 'Any' : _formatFilterDate(_endDate!),
+<<<<<<< HEAD
                     style: TextStyle(fontSize: _tablet ? 14 : 12),
+=======
+                    style: const TextStyle(fontSize: 12),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                   ),
                 ),
               ),
@@ -505,6 +570,7 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
               label: 'Status',
               child: DropdownButtonFormField<String>(
                 initialValue: _selectedStatus,
+<<<<<<< HEAD
                 decoration: _filterDecoration(large: _tablet),
                 style: TextStyle(
                   fontSize: _tablet ? 14 : 12,
@@ -514,6 +580,11 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
                   'All Status',
                   style: TextStyle(fontSize: _tablet ? 14 : 12),
                 ),
+=======
+                decoration: _filterDecoration(),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF1A3320)),
+                hint: const Text('All Status', style: TextStyle(fontSize: 12)),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                 items: [
                   const DropdownMenuItem<String>(
                     value: null,
@@ -536,6 +607,7 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
                 borderRadius: BorderRadius.circular(8),
                 child: InputDecorator(
                   decoration: _filterDecoration(
+<<<<<<< HEAD
                     large: _tablet,
                     prefixIcon: Icon(
                       Icons.refresh,
@@ -547,6 +619,18 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
                     'Refresh',
                     style: TextStyle(
                       fontSize: _tablet ? 14 : 12,
+=======
+                    prefixIcon: const Icon(
+                      Icons.refresh,
+                      size: 16,
+                      color: Color(0xFF006837),
+                    ),
+                  ),
+                  child: const Text(
+                    'Refresh',
+                    style: TextStyle(
+                      fontSize: 12,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       color: Color(0xFF006837),
                       fontWeight: FontWeight.w600,
                     ),
@@ -581,6 +665,7 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
     super.dispose();
   }
 
+<<<<<<< HEAD
   // Fixed column widths keep the pinned header aligned with the rows.
   static const List<(String, double)> _columns = [
     ('APPOINTMENT ID', 130),
@@ -904,12 +989,17 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
     final maxContentWidth = tablet ? 1100.0 : 1400.0;
     final minSide = tablet ? 24.0 : 16.0;
 
+=======
+  @override
+  Widget build(BuildContext context) {
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     return Scaffold(
       backgroundColor: const Color(0xFFF6FBF5),
       bottomNavigationBar: const SmartCareBottomNav(
         currentItem: SmartCareBottomItem.profile,
       ),
       body: SafeArea(
+<<<<<<< HEAD
         child: CustomScrollView(
           slivers: [
             const SliverToBoxAdapter(
@@ -972,11 +1062,300 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
               },
             ),
           ],
+=======
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const SmartCareDashboardHeader(
+                title: "Appointments",
+                subtitle: "Manage and review appointments.",
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 26),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1400),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildFilterPanel(),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Record List',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1A3320),
+                                ),
+                              ),
+                            ),
+                            if (SmartCareSession.currentRole ==
+                                UserRole.secretary)
+                              ElevatedButton.icon(
+                                onPressed: _addWalkIn,
+                                icon: const Icon(Icons.person_add, size: 18),
+                                label: const Text('Add Walk-in'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF006837),
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        if (_isLoading)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 40),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF006837),
+                              ),
+                            ),
+                          )
+                        else if (_error != null)
+                          Column(
+                            children: [
+                              Text(
+                                _error!,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                              TextButton(
+                                onPressed: _load,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          )
+                        else if (_filteredAppointments.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 40),
+                            child: Center(
+                              child: Text(
+                                "No appointments found.",
+                                style: TextStyle(color: Color(0xFF6E8D73)),
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: const Color(0xFFE3EFE1),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0x0A000000),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: DataTable(
+                                headingRowColor: WidgetStateColor.resolveWith(
+                                  (states) => const Color(0xFFF6FBF5),
+                                ),
+                                headingRowHeight: 48,
+                                dataRowMinHeight: 56,
+                                dataRowMaxHeight: 72,
+                                columnSpacing: 24,
+                                headingTextStyle: const TextStyle(
+                                  color: Color(0xFF1A3320),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                columns: const [
+                                  DataColumn(label: Text('APPOINTMENT ID')),
+                                  DataColumn(label: Text('REFERENCE NO.')),
+                                  DataColumn(label: Text('QUEUE NO.')),
+                                  DataColumn(label: Text('FULL NAME')),
+                                  DataColumn(label: Text('CONTACT NO.')),
+                                  DataColumn(label: Text('EMAIL')),
+                                  DataColumn(label: Text('LOCATION')),
+                                  DataColumn(
+                                    label: Text('SCHEDULE DATE & SESSION'),
+                                  ),
+                                  DataColumn(label: Text('STATUS')),
+                                  DataColumn(label: Text('CREATED AT')),
+                                ],
+                                rows: _filteredAppointments.map((appointment) {
+                                  final status =
+                                      appointment['status'] as String;
+                                  return DataRow(
+                                    cells: [
+                                      DataCell(
+                                        Text(
+                                          "${appointment['appointment_id']}",
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          appointment['reference_no']
+                                                  as String? ??
+                                              '',
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          "${appointmentQueueLabel(appointment)}\n"
+                                          "${bookingTypeLabel(appointment)}",
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          appointment['full_name'] as String,
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          _orDash(appointment['contact_number']),
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          _orDash(appointment['email']),
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          appointment['location'] as String,
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          "${_formatDate(appointment['schedule_date'] as String)}\n"
+                                          "${appointmentTimeLabel(appointment)}",
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        _updatingAppointmentId ==
+                                                appointment['appointment_id']
+                                            ? const SizedBox(
+                                                width: 16,
+                                                height: 16,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Color(0xFF006837),
+                                                    ),
+                                              )
+                                            : PopupMenuButton<String>(
+                                                enabled: !_isFinalStatus(
+                                                  status,
+                                                ),
+                                                tooltip: _isFinalStatus(status)
+                                                    ? 'This appointment is final and can no longer be changed'
+                                                    : 'Change status',
+                                                onSelected: (value) =>
+                                                    _changeStatus(
+                                                      appointment,
+                                                      value,
+                                                    ),
+                                                itemBuilder: (context) =>
+                                                    _filterableStatuses
+                                                        .map(
+                                                          (option) =>
+                                                              PopupMenuItem(
+                                                                value: option,
+                                                                child: Text(
+                                                                  _statusLabel(
+                                                                    option,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                        )
+                                                        .toList(),
+                                                child: Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 4,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: _statusColor(status),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          4,
+                                                        ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        _statusLabel(status),
+                                                        style: const TextStyle(
+                                                          color: Color(
+                                                            0xFF1A3320,
+                                                          ),
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 2),
+                                                      Icon(
+                                                        _isFinalStatus(status)
+                                                            ? Icons.lock
+                                                            : Icons
+                                                                  .arrow_drop_down,
+                                                        size:
+                                                            _isFinalStatus(
+                                                              status,
+                                                            )
+                                                            ? 12
+                                                            : 16,
+                                                        color: Color(
+                                                          0xFF1A3320,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          _formatCreatedAt(
+                                            appointment['created_at'] as String,
+                                          ),
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         ),
       ),
     );
   }
 }
+<<<<<<< HEAD
 
 class _AppointmentTableHeaderDelegate extends SliverPersistentHeaderDelegate {
   const _AppointmentTableHeaderDelegate({
@@ -1014,3 +1393,5 @@ class _AppointmentTableHeaderDelegate extends SliverPersistentHeaderDelegate {
       oldDelegate.height != height ||
       oldDelegate.background != background;
 }
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../data/location_schedule.dart';
 import '../services/appointment/appointment_service.dart';
+<<<<<<< HEAD
 import 'smartcare_date_picker.dart';
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
 /* Opens the secretary's "Add Walk-in" form: last name, first name, middle
 name (optional), contact number, Gmail/email (optional), clinic, and
@@ -102,7 +105,10 @@ class _WalkInDialogState extends State<_WalkInDialog> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
+<<<<<<< HEAD
       builder: smartCareDatePickerBuilder,
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       initialDate: initial,
       firstDate: DateTime(now.year, now.month, now.day),
       lastDate: DateTime(now.year, now.month + 3, now.day),
@@ -169,6 +175,7 @@ class _WalkInDialogState extends State<_WalkInDialog> {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     // Tablets (wider than 800px) get a wider dialog with all its text a
     // little larger; phones are unchanged.
     final tablet = MediaQuery.sizeOf(context).width > 800;
@@ -176,6 +183,12 @@ class _WalkInDialogState extends State<_WalkInDialog> {
       title: const Text("Add Walk-in"),
       content: SizedBox(
         width: tablet ? 560 : 420,
+=======
+    return AlertDialog(
+      title: const Text("Add Walk-in"),
+      content: SizedBox(
+        width: 420,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -292,6 +305,7 @@ class _WalkInDialogState extends State<_WalkInDialog> {
         ),
       ],
     );
+<<<<<<< HEAD
 
     if (!tablet) return dialog;
     return MediaQuery(
@@ -300,5 +314,7 @@ class _WalkInDialogState extends State<_WalkInDialog> {
       ).copyWith(textScaler: const TextScaler.linear(1.15)),
       child: dialog,
     );
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   }
 }

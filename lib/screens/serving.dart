@@ -6,7 +6,10 @@ import '../services/notifications/notification_service.dart';
 import '../services/queue/queue_service.dart';
 import '../state/app_session.dart';
 import '../widgets/cancel_reason_dialog.dart';
+<<<<<<< HEAD
 import '../widgets/smartcare_date_picker.dart';
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
 /// Returns [from] if it's a valid clinic day for [location], otherwise the
 /// nearest later valid day (searching up to two weeks out).
@@ -210,7 +213,10 @@ class _ServingScreenState extends State<ServingScreen> {
       if (!mounted) return;
       followUpDate = await showDatePicker(
         context: context,
+<<<<<<< HEAD
         builder: smartCareDatePickerBuilder,
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         initialDate: _nearestValidDate(
           followUpLocation,
           DateTime.now().add(const Duration(days: 7)),
@@ -449,6 +455,7 @@ class _ServingScreenState extends State<ServingScreen> {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     final tablet = _isTablet(context);
     final backButton = InkWell(
       borderRadius: BorderRadius.circular(20),
@@ -705,11 +712,158 @@ class _ServingScreenState extends State<ServingScreen> {
                                   _buildWaitingList(),
                                 ],
                               ),
+=======
+    return Scaffold(
+      backgroundColor: const Color(0xFFE8F2E4),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: Column(
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () => Navigator.of(context).pop(),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.arrow_back,
+                            color: Color(0xFF1C5D22),
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: const Color(0xFFD5E4D5)),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(
+                              0xFF0F6B2F,
+                            ).withValues(alpha: 0.05),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'NOW SERVING',
+                            style: TextStyle(
+                              color: Color(0xFF16751F),
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            widget.patientName,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Color(0xFF1A3320),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Reference: ${widget.referenceNo}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Color(0xFF506D54),
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Queue No. ${widget.queueLabel} • ${widget.location}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Color(0xFF506D54),
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _buildPrimaryAction(),
+                          if (widget.status != 'completed' &&
+                              widget.status != 'no_show') ...[
+                            // Walk-ins without an account have no app to
+                            // call or move, so these two are hidden.
+                            if (widget.patientUserId != null) ...[
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _ActionButton(
+                                      label: 'CALL AGAIN',
+                                      icon: Icons.campaign,
+                                      color: const Color(0xFF1F5AA2),
+                                      onPressed: _isWorking ? null : _callAgain,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _ActionButton(
+                                      label: 'RESCHEDULE',
+                                      icon: Icons.calendar_month,
+                                      color: const Color(0xFFFFA500),
+                                      onPressed: _isWorking
+                                          ? null
+                                          : _reschedule,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                // A patient already with the doctor clearly
+                                // showed up, and one whose day hasn't come
+                                // can't have missed it yet.
+                                if (_canMarkNoShow) ...[
+                                  Expanded(
+                                    child: _ActionButton(
+                                      label: 'NO-SHOW',
+                                      icon: Icons.person_off,
+                                      color: const Color(0xFF6B7280),
+                                      onPressed: _isWorking
+                                          ? null
+                                          : _markNoShow,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                ],
+                                Expanded(
+                                  child: _ActionButton(
+                                    label: 'CANCEL',
+                                    icon: Icons.event_busy,
+                                    color: const Color(0xFFC41E3A),
+                                    onPressed: _isWorking ? null : _cancel,
+                                  ),
+                                ),
+                              ],
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                             ),
                           ],
                         ],
                       ),
                     ),
+<<<<<<< HEAD
                   ),
                 ),
               ),
@@ -723,6 +877,73 @@ class _ServingScreenState extends State<ServingScreen> {
               ],
             );
           },
+=======
+                    if (widget.waitingPatients.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: const Color(0xFFD5E4D5)),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF0F6B2F,
+                              ).withValues(alpha: 0.05),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'WAITING IN LINE',
+                                  style: TextStyle(
+                                    color: Color(0xFF16751F),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE0F4E0),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '[${widget.waitingPatients.length}]',
+                                    style: const TextStyle(
+                                      color: Color(0xFF16751F),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildWaitingList(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         ),
       ),
     );
@@ -786,9 +1007,15 @@ class _ServingScreenState extends State<ServingScreen> {
       child: Text(
         text,
         textAlign: TextAlign.center,
+<<<<<<< HEAD
         style: TextStyle(
           color: const Color(0xFF506D54),
           fontSize: _isTablet(context) ? 14 : 12,
+=======
+        style: const TextStyle(
+          color: Color(0xFF506D54),
+          fontSize: 12,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -853,10 +1080,13 @@ class _ServingScreenState extends State<ServingScreen> {
   }
 }
 
+<<<<<<< HEAD
 /// Tablet/desktop layouts (wider than 800px) get a 750px card, larger text
 /// and buttons capped at 520px; phones keep their full-width layout.
 bool _isTablet(BuildContext context) => MediaQuery.sizeOf(context).width > 800;
 
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.label,
@@ -872,7 +1102,10 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     final tablet = _isTablet(context);
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
@@ -881,14 +1114,19 @@ class _ActionButton extends StatelessWidget {
         disabledBackgroundColor: color.withValues(alpha: 0.5),
         disabledForegroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 12),
+<<<<<<< HEAD
         minimumSize: tablet ? const Size(0, 50) : null,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(tablet ? 12 : 8),
         ),
+=======
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+<<<<<<< HEAD
           Icon(icon, size: tablet ? 20 : 16),
           SizedBox(width: tablet ? 8 : 6),
           Flexible(
@@ -901,6 +1139,13 @@ class _ActionButton extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
+=======
+          Icon(icon, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           ),
         ],
       ),

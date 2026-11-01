@@ -10,7 +10,10 @@ import '../widgets/smartcare_bottom_nav.dart'
     show SmartCareBottomNav, SmartCareBottomItem;
 import '../widgets/smartcare_dashboard_header.dart';
 import 'serving.dart';
+<<<<<<< HEAD
 import '../widgets/smartcare_date_picker.dart';
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
 String _queueStatusLabel(String status) {
   switch (status) {
@@ -59,10 +62,13 @@ class StaffQueueScreen extends StatefulWidget {
   State<StaffQueueScreen> createState() => _StaffQueueScreenState();
 }
 
+<<<<<<< HEAD
 /// Tablet/desktop layouts (wider than 800px) get a centered 1080 container,
 /// compact stat cards and larger text; phones keep their layout.
 bool _isTablet(BuildContext context) => MediaQuery.sizeOf(context).width > 800;
 
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 class _StaffQueueScreenState extends State<StaffQueueScreen> {
   late DateTime _selectedDate;
   bool _showAllQueue = false;
@@ -149,7 +155,10 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
   Future<void> _selectDate() async {
     final picked = await showDatePicker(
       context: context,
+<<<<<<< HEAD
       builder: smartCareDatePickerBuilder,
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       initialDate: _selectedDate,
       firstDate: DateTime(2024),
       lastDate: DateTime(2027),
@@ -322,17 +331,23 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
   }
 
   Widget _buildLocationFilter() {
+<<<<<<< HEAD
     final tablet = _isTablet(context);
 
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     Widget chip(String label, String? location) {
       final selected = _selectedLocation == location;
       return ChoiceChip(
         label: Text(label),
         selected: selected,
+<<<<<<< HEAD
         padding: tablet
             ? const EdgeInsets.symmetric(horizontal: 16, vertical: 8)
             : null,
         labelPadding: tablet ? EdgeInsets.zero : null,
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         onSelected: (_) => _selectLocation(location),
         showCheckmark: false,
         selectedColor: const Color(0xFF16751F),
@@ -342,7 +357,11 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
         ),
         labelStyle: TextStyle(
           color: selected ? Colors.white : const Color(0xFF16751F),
+<<<<<<< HEAD
           fontSize: tablet ? 14 : 12,
+=======
+          fontSize: 12,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           fontWeight: FontWeight.bold,
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -362,6 +381,7 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
   Widget _buildCallNextCard() {
     final needsClinic = _needsClinicForCallNext;
     final next = needsClinic ? null : _nextWaiting;
+<<<<<<< HEAD
     final tablet = _isTablet(context);
     return Container(
       width: double.infinity,
@@ -370,6 +390,11 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
       padding: tablet
           ? const EdgeInsets.symmetric(horizontal: 16, vertical: 6)
           : const EdgeInsets.all(12),
+=======
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFD2E7D1)),
@@ -400,9 +425,15 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
                       : next['patient_name'] as String,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+<<<<<<< HEAD
                   style: TextStyle(
                     color: const Color(0xFF1A3320),
                     fontSize: tablet ? 16 : 14,
+=======
+                  style: const TextStyle(
+                    color: Color(0xFF1A3320),
+                    fontSize: 14,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -421,16 +452,26 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
           ),
           const SizedBox(width: 8),
           SizedBox(
+<<<<<<< HEAD
             height: tablet ? 44 : 38,
+=======
+            height: 38,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
             child: ElevatedButton(
               onPressed: next == null || _isCallingNext ? null : _callNext,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF16751F),
                 foregroundColor: Colors.white,
                 elevation: 0,
+<<<<<<< HEAD
                 padding: EdgeInsets.symmetric(horizontal: tablet ? 24 : 16),
                 textStyle: TextStyle(
                   fontSize: tablet ? 14 : 12,
+=======
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                textStyle: const TextStyle(
+                  fontSize: 12,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                   fontWeight: FontWeight.bold,
                 ),
                 shape: RoundedRectangleBorder(
@@ -471,12 +512,16 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
+<<<<<<< HEAD
             final tablet = _isTablet(context);
             final horizontalPadding = tablet
                 ? 24.0
                 : constraints.maxWidth < 380
                 ? 12.0
                 : 16.0;
+=======
+            final horizontalPadding = constraints.maxWidth < 380 ? 12.0 : 16.0;
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
             return RefreshIndicator(
               color: const Color(0xFF16751F),
@@ -495,6 +540,7 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
                       horizontalPadding,
                       24,
                     ),
+<<<<<<< HEAD
                     child: Center(
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
@@ -620,10 +666,87 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
                                             Icons.arrow_forward_ios,
                                             color: Colors.green.shade700,
                                             size: 16,
+=======
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Stats Grid
+                        GridView.count(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          childAspectRatio: 1.6,
+                          children: [
+                            _StatCard(
+                              number: "$pendingCount",
+                              label: "Not Yet Done",
+                              icon: Icons.hourglass_top,
+                            ),
+                            _StatCard(
+                              number: "$completedCount",
+                              label: "Completed",
+                              icon: Icons.check_circle,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFFD2E7D1),
+                              width: 1,
+                            ),
+                          ),
+                          child: Material(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: _selectDate,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.calendar_month,
+                                      color: Colors.green.shade700,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "Select Date",
+                                            style: TextStyle(
+                                              color: Colors.green.shade700,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            "${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}",
+                                            style: const TextStyle(
+                                              color: Color(0xFF1A3320),
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                           ),
                                         ],
                                       ),
                                     ),
+<<<<<<< HEAD
                                   ),
                                 ),
                               ),
@@ -728,6 +851,105 @@ class _StaffQueueScreenState extends State<StaffQueueScreen> {
                           ),
                         ),
                       ),
+=======
+                                    Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: Colors.green.shade700,
+                                      size: 16,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildLocationFilter(),
+                        // Calling a patient only makes sense for today's
+                        // queue, not a past or future day.
+                        if (_isToday && !_isLoading) ...[
+                          const SizedBox(height: 16),
+                          _buildCallNextCard(),
+                        ],
+                        const SizedBox(height: 24),
+                        // Queue List Section
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Queue List",
+                              style: TextStyle(
+                                color: Color(0xFF1B6F2A),
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _toggleShowAllQueue,
+                              style: TextButton.styleFrom(
+                                foregroundColor: const Color(0xFF16751F),
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 32),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                textStyle: const TextStyle(fontSize: 12),
+                              ),
+                              child: Text(
+                                _showAllQueue ? "View Less >" : "View All >",
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (_isLoading)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF16751F),
+                              ),
+                            ),
+                          )
+                        else if (_queue.isEmpty)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(
+                                color: const Color(0xFFD5E4D5),
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              "No appointments for this date.",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Color(0xFF506D54)),
+                            ),
+                          )
+                        else
+                          Container(
+                            width: double.infinity,
+                            clipBehavior: Clip.antiAlias,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(
+                                color: const Color(0xFFD5E4D5),
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF0F6B2F,
+                                  ).withValues(alpha: 0.05),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Column(children: _buildQueueList()),
+                          ),
+                      ],
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                     ),
                   ),
                 ],
@@ -840,13 +1062,17 @@ class _StatCard extends StatelessWidget {
     required this.number,
     required this.label,
     required this.icon,
+<<<<<<< HEAD
     this.large = false,
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   });
 
   final String number;
   final String label;
   final IconData icon;
 
+<<<<<<< HEAD
   /// Tablet styling: bigger badge, number and label.
   final bool large;
 
@@ -859,10 +1085,20 @@ class _StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xFFD2E7D1)),
         borderRadius: BorderRadius.circular(large ? 12 : 8),
+=======
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFFD2E7D1)),
+        borderRadius: BorderRadius.circular(8),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         color: Colors.white,
       ),
       child: Row(
         children: [
+<<<<<<< HEAD
           if (large)
             Container(
               width: 64,
@@ -881,6 +1117,14 @@ class _StatCard extends StatelessWidget {
               child: Icon(icon, color: const Color(0xFF16751F), size: 18),
             ),
           SizedBox(width: large ? 16 : 8),
+=======
+          CircleAvatar(
+            radius: 17,
+            backgroundColor: const Color(0xFFE0F4E1),
+            child: Icon(icon, color: const Color(0xFF16751F), size: 18),
+          ),
+          const SizedBox(width: 8),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -890,20 +1134,33 @@ class _StatCard extends StatelessWidget {
                   number,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+<<<<<<< HEAD
                   style: TextStyle(
                     color: const Color(0xFF16751F),
                     fontSize: large ? 36 : 20,
                     fontWeight: FontWeight.bold,
                     height: large ? 1.1 : null,
+=======
+                  style: const TextStyle(
+                    color: Color(0xFF16751F),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                   ),
                 ),
                 Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+<<<<<<< HEAD
                   style: TextStyle(
                     color: large ? Colors.black87 : const Color(0xFF1A3320),
                     fontSize: large ? 16 : 11,
+=======
+                  style: const TextStyle(
+                    color: Color(0xFF1A3320),
+                    fontSize: 11,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                     fontWeight: FontWeight.bold,
                   ),
                 ),

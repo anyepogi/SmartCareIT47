@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../services/auth/resend_cooldown_exception.dart';
 import '../services/auth/sign_up_services.dart';
+<<<<<<< HEAD
 import '../widgets/smartcare_date_picker.dart';
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -119,7 +122,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
+<<<<<<< HEAD
       builder: smartCareDatePickerBuilder,
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       initialDate: DateTime(2000),
       firstDate: DateTime(1950),
       lastDate: DateTime.now(),
@@ -858,6 +864,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
+<<<<<<< HEAD
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isTablet = constraints.maxWidth > 600;
@@ -1082,6 +1089,191 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ],
           );
         },
+=======
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage("assets/bg.png"),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            height: MediaQuery.of(context).size.height,
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(bottom: keyboardInset),
+                child: Column(
+                  children: [
+                    // Back button
+                    Align(
+                      alignment: Alignment.topLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: GestureDetector(
+                          onTap: () {
+                            if (_currentStep > 1) {
+                              _previousStep();
+                            } else {
+                              Navigator.of(context).pop();
+                            }
+                          },
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    // Step indicators
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _stepIndicator(1, "Personal Info"),
+                          _stepIndicator(2, "Account Info"),
+                          _stepIndicator(3, "Verification"),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    // Form card
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 20,
+                              spreadRadius: 5,
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(24),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              if (_currentStep == 1) _personalInfoStep(),
+                              if (_currentStep == 2) _accountInfoStep(),
+                              if (_currentStep == 3) _verificationStep(),
+                              const SizedBox(height: 28),
+                              if (_currentStep > 1)
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: (_isSendingCode || _isSubmitting)
+                                        ? null
+                                        : (_currentStep == 3
+                                              ? _submit
+                                              : _nextStep),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF006837),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(25),
+                                      ),
+                                    ),
+                                    child: (_isSendingCode || _isSubmitting)
+                                        ? const SizedBox(
+                                            width: 22,
+                                            height: 22,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : Text(
+                                            _currentStep == 3
+                                                ? "Verify & Create Account"
+                                                : "Next",
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                  ),
+                                )
+                              else
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: _nextStep,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF006837),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(25),
+                                      ),
+                                    ),
+                                    child: const Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          "Next",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    // Sign in link
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          "Already have an account? ",
+                          style: TextStyle(color: Colors.white, fontSize: 15),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushReplacementNamed(context, '/sign-in');
+                          },
+                          child: const Text(
+                            "Sign In",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       ),
     );
   }

@@ -42,6 +42,7 @@ class VisitHistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final role = SmartCareSession.currentRole;
     final isStaff = role.canSwitchStaffRole;
+<<<<<<< HEAD
     // Tablets (wider than 800px) get a centered 900px column with all text
     // 20% larger; phones keep the original layout.
     final tablet = MediaQuery.sizeOf(context).width > 800;
@@ -64,6 +65,8 @@ class VisitHistoryScreen extends StatelessWidget {
             ),
           )
         : Padding(padding: const EdgeInsets.all(15), child: history);
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
     return Scaffold(
       backgroundColor: const Color(0xFFE8F2E4),
@@ -80,7 +83,16 @@ class VisitHistoryScreen extends StatelessWidget {
                     ? 'See which patients visited the clinic and where they were served.'
                     : 'Review your clinic visits and completed checkups.',
               ),
+<<<<<<< HEAD
               content,
+=======
+              Padding(
+                padding: const EdgeInsets.all(15),
+                child: isStaff
+                    ? const _StaffVisitHistory()
+                    : const _PatientVisitHistory(),
+              ),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
             ],
           ),
         ),

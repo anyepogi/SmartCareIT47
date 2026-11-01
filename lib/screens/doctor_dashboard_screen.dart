@@ -184,6 +184,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
       if (!confirmed || !mounted) return;
     }
 
+<<<<<<< HEAD
     // Tablets get a centered dialog; phones keep the bottom sheet.
     final picked = _isTablet(context)
         ? await showDialog<String>(
@@ -209,6 +210,14 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
             backgroundColor: Colors.transparent,
             builder: (context) => _ChooseDestinationSheet(selected: current),
           );
+=======
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _ChooseDestinationSheet(selected: current),
+    );
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     if (picked == null || !mounted) return;
 
     final userId = SmartCareSession.currentUserId;
@@ -375,17 +384,29 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
               isActuallyInClinic: isActuallyInClinic,
               currentLocation: currentLocation,
             ),
+<<<<<<< HEAD
             const SizedBox(height: 24),
             const _SectionTitle("Doctor Status"),
             const SizedBox(height: 8),
+=======
+            const SizedBox(height: 16),
+            const _SectionTitle("Doctor Status"),
+            const SizedBox(height: 12),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
             _DoctorStatusBanner(
               isAvailable: _isInClinic,
               isActuallyInClinic: isActuallyInClinic,
               onToggle: _toggleClinicStatus,
             ),
+<<<<<<< HEAD
             const SizedBox(height: 24),
             const _SectionTitle("Doctor Travel"),
             const SizedBox(height: 8),
+=======
+            const SizedBox(height: 16),
+            const _SectionTitle("Doctor Travel"),
+            const SizedBox(height: 12),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
             _DoctorTravelCard(
               destination: destination,
               distanceMeters: travelDistance,
@@ -415,12 +436,16 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
+<<<<<<< HEAD
               // Tablets/desktop get a wider 1080 container with 24px side
               // margins; phones keep their original padding and 760 cap.
               final isWide = MediaQuery.sizeOf(context).width > 800;
               final horizontalPadding = isWide
                   ? 24.0
                   : constraints.maxWidth < 380
+=======
+              final horizontalPadding = constraints.maxWidth < 380
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                   ? 12.0
                   : 16.0;
 
@@ -440,9 +465,13 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                     ),
                     child: Center(
                       child: ConstrainedBox(
+<<<<<<< HEAD
                         constraints: BoxConstraints(
                           maxWidth: isWide ? 1080 : 760,
                         ),
+=======
+                        constraints: const BoxConstraints(maxWidth: 760),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -490,9 +519,15 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                                 ),
                               ],
                             ),
+<<<<<<< HEAD
                             const SizedBox(height: 24),
                             _buildGeofencingSection(),
                             const SizedBox(height: 20),
+=======
+                            const SizedBox(height: 16),
+                            _buildGeofencingSection(),
+                            const SizedBox(height: 16),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                             _SectionHeader(
                               title: "Today's Consultations",
                               actionLabel: _showAllConsultations
@@ -500,7 +535,11 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                                   : "View all",
                               onTap: _toggleShowAllConsultations,
                             ),
+<<<<<<< HEAD
                             const SizedBox(height: 4),
+=======
+                            const SizedBox(height: 12),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                             if (_isLoadingQueue)
                               const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 24),
@@ -574,10 +613,13 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   }
 }
 
+<<<<<<< HEAD
 /// Tablet/desktop layouts (wider than 800px) get larger text and roomier
 /// cards; phones keep their original sizes.
 bool _isTablet(BuildContext context) => MediaQuery.sizeOf(context).width > 800;
 
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 class _DashboardHeader extends StatelessWidget {
   const _DashboardHeader({required this.title, required this.subtitle});
 
@@ -611,6 +653,7 @@ class _DoctorStatusBanner extends StatelessWidget {
     final displayName = (doctorName != null && doctorName.isNotEmpty)
         ? "Dr. $doctorName"
         : "Doctor";
+<<<<<<< HEAD
     final tablet = _isTablet(context);
 
     return Container(
@@ -618,6 +661,12 @@ class _DoctorStatusBanner extends StatelessWidget {
       padding: tablet
           ? const EdgeInsets.symmetric(vertical: 16, horizontal: 24)
           : const EdgeInsets.all(12),
+=======
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFD2E7D1)),
@@ -642,10 +691,17 @@ class _DoctorStatusBanner extends StatelessWidget {
                   children: [
                     Text(
                       displayName,
+<<<<<<< HEAD
                       style: TextStyle(
                         color: const Color(0xFF1A3320),
                         fontWeight: FontWeight.bold,
                         fontSize: tablet ? 18 : 14,
+=======
+                      style: const TextStyle(
+                        color: Color(0xFF1A3320),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -655,9 +711,15 @@ class _DoctorStatusBanner extends StatelessWidget {
                           : isActuallyInClinic
                           ? "In Clinic - ready for patients"
                           : "Available - not yet at a clinic",
+<<<<<<< HEAD
                       style: TextStyle(
                         color: const Color(0xFF16751F),
                         fontSize: tablet ? 14 : 11,
+=======
+                      style: const TextStyle(
+                        color: Color(0xFF16751F),
+                        fontSize: 11,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -788,7 +850,11 @@ class _DoctorTravelCard extends StatelessWidget {
   final VoidCallback onChoose;
   final VoidCallback onClear;
 
+<<<<<<< HEAD
   Widget _buildEtaRow(bool tablet) {
+=======
+  Widget _buildEtaRow() {
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     final String text;
     if (hasArrived) {
       text = "You've arrived";
@@ -830,9 +896,15 @@ class _DoctorTravelCard extends StatelessWidget {
           Expanded(
             child: Text(
               text,
+<<<<<<< HEAD
               style: TextStyle(
                 color: const Color(0xFF16751F),
                 fontSize: tablet ? 14 : 12,
+=======
+              style: const TextStyle(
+                color: Color(0xFF16751F),
+                fontSize: 12,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -855,6 +927,7 @@ class _DoctorTravelCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasDestination = destination != null;
     final justArrived = !hasDestination && arrivedAt != null;
+<<<<<<< HEAD
     final tablet = _isTablet(context);
     final chooseButton = ElevatedButton.icon(
       onPressed: onChoose,
@@ -880,6 +953,12 @@ class _DoctorTravelCard extends StatelessWidget {
       padding: tablet
           ? const EdgeInsets.symmetric(vertical: 16, horizontal: 24)
           : const EdgeInsets.all(12),
+=======
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFD2E7D1)),
@@ -910,10 +989,17 @@ class _DoctorTravelCard extends StatelessWidget {
                           : justArrived
                           ? "You've arrived at $arrivedAt Clinic"
                           : "Select your destination clinic",
+<<<<<<< HEAD
                       style: TextStyle(
                         color: const Color(0xFF1A3320),
                         fontWeight: FontWeight.bold,
                         fontSize: tablet ? 18 : 14,
+=======
+                      style: const TextStyle(
+                        color: Color(0xFF1A3320),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -923,9 +1009,15 @@ class _DoctorTravelCard extends StatelessWidget {
                           : justArrived
                           ? "Patients with appointments here today were notified."
                           : "Let us know which clinic you're going to today.",
+<<<<<<< HEAD
                       style: TextStyle(
                         color: const Color(0xFF506D54),
                         fontSize: tablet ? 14 : 11,
+=======
+                      style: const TextStyle(
+                        color: Color(0xFF506D54),
+                        fontSize: 11,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       ),
                     ),
                   ],
@@ -941,6 +1033,7 @@ class _DoctorTravelCard extends StatelessWidget {
                   ),
                   tooltip: "Clear destination",
                 ),
+<<<<<<< HEAD
               if (tablet) ...[
                 const SizedBox(width: 16),
                 SizedBox(height: 44, child: chooseButton),
@@ -959,12 +1052,42 @@ class _DoctorTravelCard extends StatelessWidget {
             const SizedBox(height: 10),
             SizedBox(width: double.infinity, height: 40, child: chooseButton),
           ],
+=======
+            ],
+          ),
+          if (hasDestination) ...[const SizedBox(height: 10), _buildEtaRow()],
+          const SizedBox(height: 8),
+          const Divider(height: 1, color: Color(0xFFE3EFE1)),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 40,
+            child: ElevatedButton.icon(
+              onPressed: onChoose,
+              icon: const Icon(Icons.location_on, size: 18),
+              label: Text(hasDestination ? "Change Clinic" : "Choose Clinic"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF16751F),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                textStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+          ),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         ],
       ),
     );
   }
 }
 
+<<<<<<< HEAD
 /// Lists every clinic as a tappable card. Shown as a bottom sheet on phones
 /// and as a centered dialog on tablets. Pops with the chosen clinic's name.
 class _ChooseDestinationSheet extends StatelessWidget {
@@ -983,6 +1106,32 @@ class _ChooseDestinationSheet extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (!asDialog) ...[
+=======
+/// Bottom sheet listing every clinic with a "Go to this Clinic" button.
+/// Pops with the chosen clinic's name.
+class _ChooseDestinationSheet extends StatelessWidget {
+  const _ChooseDestinationSheet({required this.selected});
+
+  final String? selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFF4FAF2),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        10,
+        16,
+        16 + MediaQuery.paddingOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           Center(
             child: Container(
               width: 40,
@@ -994,6 +1143,7 @@ class _ChooseDestinationSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
+<<<<<<< HEAD
         ],
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1076,22 +1226,77 @@ class _ChooseDestinationSheet extends StatelessWidget {
         4 + MediaQuery.paddingOf(context).bottom,
       ),
       child: content,
+=======
+          const Text(
+            "Choose Your Destination",
+            style: TextStyle(
+              color: Color(0xFF16751F),
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            "Where are you going today?",
+            style: TextStyle(color: Color(0xFF506D54), fontSize: 12),
+          ),
+          const SizedBox(height: 14),
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  for (final clinic in clinicLocations) ...[
+                    _DestinationTile(
+                      clinic: clinic,
+                      address: _clinicAddresses[clinic] ?? '',
+                      isSelected: clinic == selected,
+                      onGo: () async {
+                        final confirmed = await _confirmTravelAction(
+                          context,
+                          title: "Go to $clinic Clinic?",
+                          message:
+                              "You will be marked as heading to $clinic "
+                              "Clinic (${_clinicAddresses[clinic] ?? ''}).",
+                          confirmLabel: "Confirm",
+                        );
+                        if (!confirmed || !context.mounted) return;
+                        Navigator.of(context).pop(clinic);
+                      },
+                    ),
+                    if (clinic != clinicLocations.last)
+                      const SizedBox(height: 10),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     );
   }
 }
 
+<<<<<<< HEAD
 /// A clinic card; the whole card is the button.
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 class _DestinationTile extends StatelessWidget {
   const _DestinationTile({
     required this.clinic,
     required this.address,
     required this.isSelected,
+<<<<<<< HEAD
     required this.onTap,
+=======
+    required this.onGo,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   });
 
   final String clinic;
   final String address;
   final bool isSelected;
+<<<<<<< HEAD
   final VoidCallback onTap;
 
   @override
@@ -1176,6 +1381,101 @@ class _DestinationTile extends StatelessWidget {
             ),
           ),
         ),
+=======
+  final VoidCallback onGo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+          color: isSelected ? const Color(0xFF16751F) : const Color(0xFFD2E7D1),
+          width: isSelected ? 1.5 : 1,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5F4E6),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.location_on_outlined,
+                  color: Color(0xFF16751F),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "$clinic Clinic",
+                      style: const TextStyle(
+                        color: Color(0xFF1A3320),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      address,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF506D54),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isSelected)
+                const Icon(
+                  Icons.check_circle,
+                  color: Color(0xFF16751F),
+                  size: 20,
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 38,
+            child: ElevatedButton(
+              onPressed: onGo,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isSelected
+                    ? const Color(0xFF16751F)
+                    : const Color(0xFFE5F4E6),
+                foregroundColor: isSelected
+                    ? Colors.white
+                    : const Color(0xFF16751F),
+                elevation: 0,
+                textStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: const Text("Go to this Clinic"),
+            ),
+          ),
+        ],
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       ),
     );
   }
@@ -1195,6 +1495,7 @@ class _GeofencingStatusCard extends StatelessWidget {
     final statusColor = isActuallyInClinic
         ? const Color(0xFF0E8A2C)
         : const Color(0xFF999999);
+<<<<<<< HEAD
     final tablet = _isTablet(context);
 
     return Container(
@@ -1202,6 +1503,12 @@ class _GeofencingStatusCard extends StatelessWidget {
       padding: tablet
           ? const EdgeInsets.symmetric(vertical: 16, horizontal: 24)
           : const EdgeInsets.all(16),
+=======
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFD5E4D5)),
@@ -1225,11 +1532,19 @@ class _GeofencingStatusCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+<<<<<<< HEAD
                     Text(
                       "Geofencing Status",
                       style: TextStyle(
                         color: const Color(0xFF16751F),
                         fontSize: tablet ? 18 : 15,
+=======
+                    const Text(
+                      "Geofencing Status",
+                      style: TextStyle(
+                        color: Color(0xFF16751F),
+                        fontSize: 15,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1238,9 +1553,15 @@ class _GeofencingStatusCard extends StatelessWidget {
                       isActuallyInClinic
                           ? "You are inside the $currentLocation area"
                           : "You are not inside a clinic area",
+<<<<<<< HEAD
                       style: TextStyle(
                         color: const Color(0xFF506D54),
                         fontSize: tablet ? 14 : 12,
+=======
+                      style: const TextStyle(
+                        color: Color(0xFF506D54),
+                        fontSize: 12,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       ),
                     ),
                   ],
@@ -1265,7 +1586,11 @@ class _GeofencingStatusCard extends StatelessWidget {
                           isActuallyInClinic ? "Inside" : "Outside",
                           style: TextStyle(
                             color: statusColor,
+<<<<<<< HEAD
                             fontSize: tablet ? 14 : 11,
+=======
+                            fontSize: 11,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -1357,7 +1682,11 @@ class _AvailabilityPill extends StatelessWidget {
               color: isAvailable
                   ? const Color(0xFF16751F)
                   : const Color(0xFF58655B),
+<<<<<<< HEAD
               fontSize: _isTablet(context) ? 14 : 12,
+=======
+              fontSize: 12,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -1491,7 +1820,11 @@ class _SectionHeader extends StatelessWidget {
             padding: EdgeInsets.zero,
             minimumSize: const Size(0, 32),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+<<<<<<< HEAD
             textStyle: TextStyle(fontSize: _isTablet(context) ? 14 : 12),
+=======
+            textStyle: const TextStyle(fontSize: 12),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           ),
           child: Text("$actionLabel >"),
         ),
@@ -1509,9 +1842,15 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
+<<<<<<< HEAD
       style: TextStyle(
         color: const Color(0xFF1B6F2A),
         fontSize: _isTablet(context) ? 22 : 16,
+=======
+      style: const TextStyle(
+        color: Color(0xFF1B6F2A),
+        fontSize: 16,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         fontWeight: FontWeight.bold,
       ),
     );
@@ -1528,13 +1867,20 @@ class _StatGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = constraints.maxWidth >= 620 ? 4 : 2;
+<<<<<<< HEAD
         final tablet = _isTablet(context);
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
         return GridView.count(
           crossAxisCount: columns,
           crossAxisSpacing: 8,
           mainAxisSpacing: 8,
+<<<<<<< HEAD
           childAspectRatio: tablet ? 1.6 : (columns == 4 ? 1.22 : 1.6),
+=======
+          childAspectRatio: columns == 4 ? 1.22 : 1.6,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           children: stats,
@@ -1561,6 +1907,7 @@ class _DashboardStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     final tablet = _isTablet(context);
     final labelText = Text(
       label,
@@ -1586,6 +1933,10 @@ class _DashboardStat extends StatelessWidget {
       padding: tablet
           ? const EdgeInsets.symmetric(vertical: 16, horizontal: 16)
           : const EdgeInsets.all(10),
+=======
+    return Container(
+      padding: const EdgeInsets.all(10),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       decoration: BoxDecoration(
         border: Border.all(color: const Color(0xFFD2E7D1)),
         borderRadius: BorderRadius.circular(8),
@@ -1612,13 +1963,20 @@ class _DashboardStat extends StatelessWidget {
                   child: Text(
                     value,
                     maxLines: 1,
+<<<<<<< HEAD
                     style: TextStyle(
                       color: const Color(0xFF16751F),
                       fontSize: tablet ? 34 : 20,
+=======
+                    style: const TextStyle(
+                      color: Color(0xFF16751F),
+                      fontSize: 20,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
+<<<<<<< HEAD
                 // On narrower tablets the bigger text shrinks to fit rather
                 // than being cut off.
                 if (tablet)
@@ -1637,6 +1995,24 @@ class _DashboardStat extends StatelessWidget {
                   )
                 else
                   detailText,
+=======
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF1A3320),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  detail,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Color(0xFF6E8D73), fontSize: 9),
+                ),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
               ],
             ),
           ),
@@ -1700,16 +2076,23 @@ class _PatientTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     final tablet = _isTablet(context);
 
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     return Material(
       color: Colors.white,
       child: InkWell(
         onTap: onTap,
         child: Padding(
+<<<<<<< HEAD
           padding: tablet
               ? const EdgeInsets.symmetric(vertical: 16, horizontal: 24)
               : const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+=======
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           child: Row(
             children: [
               Container(
@@ -1740,9 +2123,15 @@ class _PatientTile extends StatelessWidget {
                         name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+<<<<<<< HEAD
                         style: TextStyle(
                           color: const Color(0xFF1A3320),
                           fontSize: tablet ? 18 : 14,
+=======
+                        style: const TextStyle(
+                          color: Color(0xFF1A3320),
+                          fontSize: 14,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1752,9 +2141,15 @@ class _PatientTile extends StatelessWidget {
                       detail,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+<<<<<<< HEAD
                       style: TextStyle(
                         color: const Color(0xFF506D54),
                         fontSize: tablet ? 14 : 12,
+=======
+                      style: const TextStyle(
+                        color: Color(0xFF506D54),
+                        fontSize: 12,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       ),
                     ),
                   ],

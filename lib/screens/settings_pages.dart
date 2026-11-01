@@ -232,10 +232,13 @@ class HelpSupportScreen extends StatelessWidget {
   }
 }
 
+<<<<<<< HEAD
 /// Tablet/desktop layouts (wider than 800px) get an 880px container and
 /// larger tiles; phones keep their original layout.
 bool _isTablet(BuildContext context) => MediaQuery.sizeOf(context).width > 800;
 
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 class _SettingsPage extends StatelessWidget {
   const _SettingsPage({
     required this.title,
@@ -249,6 +252,7 @@ class _SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     final tablet = _isTablet(context);
     final card = Container(
       padding: const EdgeInsets.all(16),
@@ -260,6 +264,8 @@ class _SettingsPage extends StatelessWidget {
       child: Column(children: children),
     );
 
+=======
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     return Scaffold(
       backgroundColor: const Color(0xFFDDECD9),
       bottomNavigationBar: const SmartCareBottomNav(
@@ -271,6 +277,7 @@ class _SettingsPage extends StatelessWidget {
             _SettingsHeader(title: title, subtitle: subtitle),
             Expanded(
               child: ListView(
+<<<<<<< HEAD
                 padding: tablet
                     ? const EdgeInsets.symmetric(horizontal: 24, vertical: 20)
                     : const EdgeInsets.fromLTRB(18, 22, 18, 28),
@@ -284,6 +291,19 @@ class _SettingsPage extends StatelessWidget {
                     )
                   else
                     card,
+=======
+                padding: const EdgeInsets.fromLTRB(18, 22, 18, 28),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF146F1B)),
+                    ),
+                    child: Column(children: children),
+                  ),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                 ],
               ),
             ),
@@ -330,6 +350,7 @@ class _SettingSwitchTileState extends State<_SettingSwitchTile> {
       icon: widget.icon,
       title: widget.title,
       subtitle: widget.subtitle,
+<<<<<<< HEAD
       trailing: _isTablet(context)
           ? Transform.scale(
               scale: 1.1,
@@ -353,6 +374,17 @@ class _SettingSwitchTileState extends State<_SettingSwitchTile> {
                 });
               },
             ),
+=======
+      trailing: Switch(
+        value: isEnabled,
+        activeThumbColor: const Color(0xFF146F1B),
+        onChanged: (value) {
+          setState(() {
+            isEnabled = value;
+          });
+        },
+      ),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     );
   }
 }
@@ -374,9 +406,13 @@ class _SettingInfoTile extends StatelessWidget {
       icon: icon,
       title: title,
       subtitle: subtitle,
+<<<<<<< HEAD
       trailing: _isTablet(context)
           ? Icon(Icons.chevron_right, color: Colors.grey.shade400, size: 22)
           : const Icon(Icons.chevron_right, color: Color(0xFF146F1B)),
+=======
+      trailing: const Icon(Icons.chevron_right, color: Color(0xFF146F1B)),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     );
   }
 }
@@ -396,6 +432,7 @@ class _SettingTileShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     final tablet = _isTablet(context);
 
     return Container(
@@ -403,6 +440,11 @@ class _SettingTileShell extends StatelessWidget {
       padding: tablet
           ? const EdgeInsets.symmetric(horizontal: 20, vertical: 16)
           : const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+=======
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -410,6 +452,7 @@ class _SettingTileShell extends StatelessWidget {
       ),
       child: Row(
         children: [
+<<<<<<< HEAD
           if (tablet)
             Container(
               width: 46,
@@ -428,12 +471,21 @@ class _SettingTileShell extends StatelessWidget {
               child: Icon(icon, color: const Color(0xFF146F1B), size: 23),
             ),
           SizedBox(width: tablet ? 16 : 12),
+=======
+          CircleAvatar(
+            radius: 21,
+            backgroundColor: const Color(0xFFDDECD9),
+            child: Icon(icon, color: const Color(0xFF146F1B), size: 23),
+          ),
+          const SizedBox(width: 12),
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
+<<<<<<< HEAD
                   style: TextStyle(
                     color: const Color(0xFF146F1B),
                     fontSize: tablet ? 18 : 15,
@@ -446,6 +498,20 @@ class _SettingTileShell extends StatelessWidget {
                   style: TextStyle(
                     color: tablet ? Colors.black54 : const Color(0xFF4F7B55),
                     fontSize: tablet ? 14 : 12,
+=======
+                  style: const TextStyle(
+                    color: Color(0xFF146F1B),
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Color(0xFF4F7B55),
+                    fontSize: 12,
+>>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                     height: 1.3,
                   ),
                 ),
