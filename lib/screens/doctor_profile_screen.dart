@@ -173,16 +173,12 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-<<<<<<< HEAD
             final tablet = _isTablet(context);
             final horizontalPadding = tablet
                 ? 24.0
                 : constraints.maxWidth < 380
                 ? 12.0
                 : 16.0;
-=======
-            final horizontalPadding = constraints.maxWidth < 380 ? 12.0 : 16.0;
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
             if (_isLoading) {
               return ListView(
@@ -237,7 +233,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               );
             }
 
-<<<<<<< HEAD
             final firstName = _ProfileInfoField(
               icon: Icons.person,
               label: 'First Name',
@@ -375,8 +370,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                     emergencyContact,
                   ];
 
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
             return ListView(
               children: [
                 const SmartCareDashboardHeader(
@@ -392,11 +385,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   ),
                   child: Center(
                     child: ConstrainedBox(
-<<<<<<< HEAD
                       constraints: BoxConstraints(maxWidth: tablet ? 880 : 760),
-=======
-                      constraints: const BoxConstraints(maxWidth: 760),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -416,13 +405,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                               children: [
                                 // Avatar
                                 Container(
-<<<<<<< HEAD
                                   width: tablet ? 64 : 60,
                                   height: tablet ? 64 : 60,
-=======
-                                  width: 60,
-                                  height: 60,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFD4E8D4),
                                     shape: BoxShape.circle,
@@ -430,15 +414,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                   child: Center(
                                     child: Text(
                                       _initialsFromName(),
-<<<<<<< HEAD
                                       style: TextStyle(
                                         color: const Color(0xFF0F6B2F),
                                         fontSize: tablet ? 22 : 24,
-=======
-                                      style: const TextStyle(
-                                        color: Color(0xFF0F6B2F),
-                                        fontSize: 24,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -453,34 +431,21 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                     children: [
                                       Text(
                                         'DR. ${_fullName().toUpperCase()}',
-<<<<<<< HEAD
                                         style: TextStyle(
                                           color: const Color(0xFF0F6B2F),
                                           fontSize: tablet ? 22 : 16,
-=======
-                                        style: const TextStyle(
-                                          color: Color(0xFF0F6B2F),
-                                          fontSize: 16,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
                                         _doctorIdLabel(),
-<<<<<<< HEAD
                                         style: TextStyle(
                                           color: const Color(0xFF0F6B2F),
                                           fontSize: tablet ? 14 : 13,
                                           fontWeight: tablet
                                               ? FontWeight.w500
                                               : FontWeight.w600,
-=======
-                                        style: const TextStyle(
-                                          color: Color(0xFF0F6B2F),
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                         ),
                                       ),
                                     ],
@@ -497,126 +462,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                             onExpanded: (value) {
                               setState(() => _personalInfoExpanded = value);
                             },
-<<<<<<< HEAD
                             children: personalFields,
-=======
-                            children: [
-                              _ProfileInfoField(
-                                icon: Icons.person,
-                                label: 'First Name',
-                                value: _getDisplayValue('First Name'),
-                                isEditing: _isEditing,
-                                onChanged: (value) => setState(
-                                  () =>
-                                      _editedPersonalInfo['First Name'] = value,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _ProfileInfoField(
-                                icon: Icons.person,
-                                label: 'Middle Name',
-                                value: _getDisplayValue('Middle Name'),
-                                isEditing: _isEditing,
-                                onChanged: (value) => setState(
-                                  () => _editedPersonalInfo['Middle Name'] =
-                                      value,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _ProfileInfoField(
-                                icon: Icons.person,
-                                label: 'Last Name',
-                                value: _getDisplayValue('Last Name'),
-                                isEditing: _isEditing,
-                                onChanged: (value) => setState(
-                                  () =>
-                                      _editedPersonalInfo['Last Name'] = value,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              ProfileDateField(
-                                icon: Icons.calendar_today,
-                                label: 'Date of Birth',
-                                value: _getDisplayValue('Date of Birth'),
-                                isEditing: _isEditing,
-                                onChanged: (value) => setState(
-                                  () => _editedPersonalInfo['Date of Birth'] =
-                                      value,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              ProfileGenderField(
-                                icon: Icons.wc,
-                                label: 'Gender',
-                                value: _getDisplayValue('Gender'),
-                                isEditing: _isEditing,
-                                onChanged: (value) => setState(
-                                  () => _editedPersonalInfo['Gender'] = value,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _ProfileInfoField(
-                                icon: Icons.email,
-                                label: 'Email',
-                                value: _getDisplayValue('Email'),
-                                isEditing: false,
-                              ),
-                              const SizedBox(height: 8),
-                              _ProfileInfoField(
-                                icon: Icons.phone,
-                                label: 'Phone Number',
-                                value: _getDisplayValue('Phone'),
-                                isEditing: _isEditing,
-                                onChanged: (value) => setState(
-                                  () => _editedPersonalInfo['Phone'] = value,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _ProfileInfoField(
-                                icon: Icons.location_on,
-                                label: 'Address',
-                                value: _getDisplayValue('Address'),
-                                isEditing: _isEditing,
-                                onChanged: (value) => setState(
-                                  () => _editedPersonalInfo['Address'] = value,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _ProfileInfoField(
-                                icon: Icons.favorite,
-                                label: 'Civil Status',
-                                value: _getDisplayValue('Civil Status'),
-                                isEditing: _isEditing,
-                                onChanged: (value) => setState(
-                                  () => _editedPersonalInfo['Civil Status'] =
-                                      value,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _ProfileInfoField(
-                                icon: Icons.work,
-                                label: 'Occupation',
-                                value: _getDisplayValue('Occupation'),
-                                isEditing: _isEditing,
-                                onChanged: (value) => setState(
-                                  () =>
-                                      _editedPersonalInfo['Occupation'] = value,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _ProfileInfoField(
-                                icon: Icons.person,
-                                label: 'Emergency Contact',
-                                value: _getDisplayValue('Emergency Contact'),
-                                isEditing: _isEditing,
-                                onChanged: (value) => setState(
-                                  () =>
-                                      _editedPersonalInfo['Emergency Contact'] =
-                                          value,
-                                ),
-                              ),
-                            ],
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                           ),
                           const SizedBox(height: 16),
                           // Account Settings Section
@@ -674,11 +520,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                           // Edit/Save Button
                           SizedBox(
                             width: double.infinity,
-<<<<<<< HEAD
                             height: tablet ? 50 : 48,
-=======
-                            height: 48,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                             child: ElevatedButton.icon(
                               onPressed: _isSaving
                                   ? null
@@ -718,30 +560,20 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                     : (_isEditing
                                           ? 'Save Changes'
                                           : 'Edit Profile'),
-<<<<<<< HEAD
                                 style: TextStyle(
                                   fontSize: tablet ? 17 : 15,
                                   fontWeight: tablet
                                       ? FontWeight.bold
                                       : FontWeight.w600,
-=======
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                 ),
                               ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF006B2D),
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-<<<<<<< HEAD
                                   borderRadius: BorderRadius.circular(
                                     tablet ? 14 : 12,
                                   ),
-=======
-                                  borderRadius: BorderRadius.circular(12),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                 ),
                                 elevation: 0,
                               ),
@@ -772,12 +604,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                               ),
                             ),
                           ],
-<<<<<<< HEAD
                           // Extra room so the bottom navigation never
                           // covers the buttons on tablets.
                           if (tablet) const SizedBox(height: 100),
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                         ],
                       ),
                     ),
@@ -792,7 +621,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   }
 }
 
-<<<<<<< HEAD
 /// Tablet/desktop layouts (wider than 800px) get an 880px container, a
 /// 2-column field grid and larger text; phones keep their layout.
 bool _isTablet(BuildContext context) => MediaQuery.sizeOf(context).width > 800;
@@ -810,8 +638,6 @@ Widget _fieldRow(List<Widget> fields) {
   );
 }
 
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 class _ExpandableSection extends StatelessWidget {
   final String title;
   final bool isExpanded;
@@ -881,22 +707,16 @@ class _ProfileInfoField extends StatefulWidget {
   final bool isEditing;
   final ValueChanged<String>? onChanged;
 
-<<<<<<< HEAD
   /// Tablet styling: roomier padding, darker labels and bigger values.
   final bool large;
 
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   const _ProfileInfoField({
     required this.icon,
     required this.label,
     required this.value,
     required this.isEditing,
     this.onChanged,
-<<<<<<< HEAD
     this.large = false,
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   });
 
   @override
@@ -928,7 +748,6 @@ class _ProfileInfoFieldState extends State<_ProfileInfoField> {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
     final large = widget.large;
     final labelStyle = large
         ? TextStyle(
@@ -946,10 +765,6 @@ class _ProfileInfoFieldState extends State<_ProfileInfoField> {
       padding: large
           ? const EdgeInsets.symmetric(vertical: 12, horizontal: 16)
           : const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-=======
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       decoration: BoxDecoration(
         color: const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(8),
@@ -969,28 +784,14 @@ class _ProfileInfoFieldState extends State<_ProfileInfoField> {
                 ? TextField(
                     controller: _controller,
                     onChanged: widget.onChanged,
-<<<<<<< HEAD
                     style: TextStyle(
                       color: const Color(0xFF006B2D),
                       fontSize: large ? 16 : 13,
-=======
-                    style: const TextStyle(
-                      color: Color(0xFF006B2D),
-                      fontSize: 13,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       fontWeight: FontWeight.w600,
                     ),
                     decoration: InputDecoration(
                       labelText: widget.label,
-<<<<<<< HEAD
                       labelStyle: labelStyle,
-=======
-                      labelStyle: const TextStyle(
-                        color: Color(0xFF999999),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       border: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
@@ -999,7 +800,6 @@ class _ProfileInfoFieldState extends State<_ProfileInfoField> {
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-<<<<<<< HEAD
                       Text(widget.label, style: labelStyle),
                       const SizedBox(height: 2),
                       Text(
@@ -1015,24 +815,6 @@ class _ProfileInfoFieldState extends State<_ProfileInfoField> {
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
-=======
-                      Text(
-                        widget.label,
-                        style: const TextStyle(
-                          color: Color(0xFF999999),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        widget.value.isEmpty ? 'Not provided' : widget.value,
-                        style: const TextStyle(
-                          color: Color(0xFF006B2D),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       ),
                     ],
                   ),

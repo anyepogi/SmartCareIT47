@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 Future<bool> confirmSmartCareSignOut(BuildContext context) async {
   final shouldSignOut = await showDialog<bool>(
     context: context,
-<<<<<<< HEAD
     builder: (context) {
       // Tablets (wider than 800px) get a wider dialog with larger text;
       // phones keep the default AlertDialog.
@@ -56,22 +55,6 @@ Future<bool> confirmSmartCareSignOut(BuildContext context) async {
         ],
       );
     },
-=======
-    builder: (context) => AlertDialog(
-      title: const Text('Sign out of SmartCare?'),
-      content: const Text('Are you sure you want to sign out of your account?'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('Sign Out'),
-        ),
-      ],
-    ),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   );
 
   return shouldSignOut == true;

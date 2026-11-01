@@ -27,14 +27,11 @@ class SmartCareBottomNav extends StatelessWidget {
       builder: (context, sessionRole, _) {
         final role = roleOverride ?? sessionRole;
         final actions = _actions(role);
-<<<<<<< HEAD
         // Doctor and secretary bars get bigger icons and labels on tablets
         // (wider than 800px); phones and the patient bar stay compact.
         final large =
             role != UserRole.patient && MediaQuery.sizeOf(context).width > 800;
         final radius = BorderRadius.circular(large ? 24 : 18);
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
@@ -44,7 +41,6 @@ class SmartCareBottomNav extends StatelessWidget {
               color: Colors.white,
               elevation: 10,
               shadowColor: const Color(0x330F6B2F),
-<<<<<<< HEAD
               borderRadius: radius,
               child: Container(
                 height: large ? 80 : 78,
@@ -54,14 +50,6 @@ class SmartCareBottomNav extends StatelessWidget {
                 decoration: BoxDecoration(
                   border: Border.all(color: const Color(0xFFD2E7D1)),
                   borderRadius: radius,
-=======
-              borderRadius: BorderRadius.circular(18),
-              child: Container(
-                height: 78,
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFFD2E7D1)),
-                  borderRadius: BorderRadius.circular(18),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                 ),
                 child: Row(
                   children: actions.map((action) {
@@ -77,19 +65,13 @@ class SmartCareBottomNav extends StatelessWidget {
                           ? _CenterNavButton(
                               action: action,
                               selected: selected,
-<<<<<<< HEAD
                               large: large,
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                               onTap: () => _handleTap(context, action),
                             )
                           : _NavButton(
                               action: action,
                               selected: selected,
-<<<<<<< HEAD
                               large: large,
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                               onTap: () => _handleTap(context, action),
                             ),
                     );
@@ -249,22 +231,16 @@ class _NavButton extends StatelessWidget {
     required this.action,
     required this.selected,
     required this.onTap,
-<<<<<<< HEAD
     this.large = false,
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   });
 
   final _BottomNavAction action;
   final bool selected;
   final VoidCallback onTap;
 
-<<<<<<< HEAD
   /// Tablet sizing for the doctor/secretary bar.
   final bool large;
 
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   @override
   Widget build(BuildContext context) {
     final color = selected ? const Color(0xFF0F6B2F) : const Color(0xFF6E8D73);
@@ -282,27 +258,18 @@ class _NavButton extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-<<<<<<< HEAD
                   Icon(
                     action.icon,
                     color: color,
                     size: large ? (selected ? 30 : 28) : (selected ? 26 : 24),
                   ),
                   SizedBox(height: large ? 4 : 5),
-=======
-                  Icon(action.icon, color: color, size: selected ? 26 : 24),
-                  const SizedBox(height: 5),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                   Text(
                     action.label,
                     maxLines: 1,
                     style: TextStyle(
                       color: color,
-<<<<<<< HEAD
                       fontSize: large ? 14 : 11,
-=======
-                      fontSize: 11,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       fontWeight: selected ? FontWeight.bold : FontWeight.w600,
                     ),
                   ),
@@ -321,22 +288,16 @@ class _CenterNavButton extends StatelessWidget {
     required this.action,
     required this.selected,
     required this.onTap,
-<<<<<<< HEAD
     this.large = false,
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   });
 
   final _BottomNavAction action;
   final bool selected;
   final VoidCallback onTap;
 
-<<<<<<< HEAD
   /// Tablet sizing for the doctor/secretary bar.
   final bool large;
 
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   @override
   Widget build(BuildContext context) {
     final circleColor = selected
@@ -353,19 +314,12 @@ class _CenterNavButton extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             Positioned(
-<<<<<<< HEAD
               // The bar's 8px tablet padding moves the button down, so it
               // starts 8px higher to keep the same overlap.
               top: large ? -24 : -16,
               child: Container(
                 width: large ? 62 : 58,
                 height: large ? 62 : 58,
-=======
-              top: -16,
-              child: Container(
-                width: 58,
-                height: 58,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                 decoration: BoxDecoration(
                   color: circleColor,
                   shape: BoxShape.circle,
@@ -378,7 +332,6 @@ class _CenterNavButton extends StatelessWidget {
                     ),
                   ],
                 ),
-<<<<<<< HEAD
                 child: Icon(
                   action.icon,
                   color: Colors.white,
@@ -388,13 +341,6 @@ class _CenterNavButton extends StatelessWidget {
             ),
             Positioned(
               bottom: large ? 2 : 9,
-=======
-                child: Icon(action.icon, color: Colors.white, size: 27),
-              ),
-            ),
-            Positioned(
-              bottom: 9,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
               left: 4,
               right: 4,
               child: FittedBox(
@@ -404,11 +350,7 @@ class _CenterNavButton extends StatelessWidget {
                   maxLines: 1,
                   style: TextStyle(
                     color: circleColor,
-<<<<<<< HEAD
                     fontSize: large ? 14 : 11,
-=======
-                    fontSize: 11,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                     fontWeight: FontWeight.bold,
                   ),
                 ),

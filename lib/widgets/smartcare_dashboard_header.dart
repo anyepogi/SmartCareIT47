@@ -33,7 +33,6 @@ class SmartCareDashboardHeader extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 380;
-<<<<<<< HEAD
         // Tablets (wider than 800px) get a slightly shorter header with
         // larger text and a bigger bell; phones keep their exact layout.
         final tablet = MediaQuery.sizeOf(context).width > 800;
@@ -51,19 +50,6 @@ class SmartCareDashboardHeader extends StatelessWidget {
               // Tablets trim the shorter header from the bottom so the
               // artwork's top edge stays where it was.
               alignment: tablet ? Alignment.topCenter : Alignment.center,
-=======
-        final horizontalPadding = compact ? 10.0 : 18.0;
-        final titleTopPadding = compact ? 19.0 : 22.0;
-        final bottomPadding = compact ? 30.0 : 34.0;
-
-        return Container(
-          width: double.infinity,
-          height: 175,
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage("assets/headnav.png"),
-              fit: BoxFit.cover,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
             ),
           ),
           child: Column(
@@ -78,11 +64,7 @@ class SmartCareDashboardHeader extends StatelessWidget {
                   6,
                 ),
                 child: SizedBox(
-<<<<<<< HEAD
                   height: tablet ? 40 : 30,
-=======
-                  height: 30,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                   child: Row(
                     children: [
                       if (onBack != null)
@@ -103,33 +85,21 @@ class SmartCareDashboardHeader extends StatelessWidget {
                           ),
                         ),
                       if (onBack != null) const SizedBox(width: 6),
-<<<<<<< HEAD
                       Expanded(
-=======
-                      const Expanded(
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                         child: Text(
                           "SmartCare",
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white,
-<<<<<<< HEAD
                             fontSize: tablet ? 21 : 18,
-=======
-                            fontSize: 18,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                             fontWeight: FontWeight.w700,
                             height: 1.0,
                           ),
                         ),
                       ),
                       if (showNotificationIcon)
-<<<<<<< HEAD
                         _DashboardNotificationButton(large: tablet),
-=======
-                        const _DashboardNotificationButton(),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                     ],
                   ),
                 ),
@@ -150,21 +120,14 @@ class SmartCareDashboardHeader extends StatelessWidget {
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-<<<<<<< HEAD
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: tablet ? 24 : 17,
-=======
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                         fontWeight: FontWeight.w700,
                         height: 1.08,
                       ),
                     ),
                     if (subtitle.isNotEmpty) ...[
-<<<<<<< HEAD
                       SizedBox(height: tablet ? 6 : 5),
                       Text(
                         subtitle,
@@ -175,16 +138,6 @@ class SmartCareDashboardHeader extends StatelessWidget {
                         style: TextStyle(
                           color: const Color(0xFFE8F7E8),
                           fontSize: tablet ? 15 : 13,
-=======
-                      const SizedBox(height: 5),
-                      Text(
-                        subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFE8F7E8),
-                          fontSize: 13,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                           fontWeight: FontWeight.w400,
                           height: 1.18,
                         ),
@@ -202,28 +155,20 @@ class SmartCareDashboardHeader extends StatelessWidget {
 }
 
 class _DashboardNotificationButton extends StatelessWidget {
-<<<<<<< HEAD
   const _DashboardNotificationButton({this.large = false});
 
   /// Tablet sizing: bigger bell, tap area and badge.
   final bool large;
-=======
-  const _DashboardNotificationButton();
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
       tooltip: "Notifications",
       padding: EdgeInsets.zero,
-<<<<<<< HEAD
       constraints: BoxConstraints.tightFor(
         width: large ? 40 : 30,
         height: large ? 40 : 30,
       ),
-=======
-      constraints: const BoxConstraints.tightFor(width: 30, height: 30),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       onPressed: () {
         final currentRole = SmartCareSession.currentRole;
         final route =
@@ -238,30 +183,18 @@ class _DashboardNotificationButton extends StatelessWidget {
           return Stack(
             clipBehavior: Clip.none,
             children: [
-<<<<<<< HEAD
               Icon(
                 Icons.notifications_none,
                 color: Colors.white,
                 size: large ? 30 : 23,
-=======
-              const Icon(
-                Icons.notifications_none,
-                color: Colors.white,
-                size: 23,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
               ),
               if (unreadCount > 0)
                 Positioned(
                   right: -2,
                   top: -2,
                   child: Container(
-<<<<<<< HEAD
                     width: large ? 17 : 14,
                     height: large ? 17 : 14,
-=======
-                    width: 14,
-                    height: 14,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: const Color(0xFFFF304B),
@@ -270,15 +203,9 @@ class _DashboardNotificationButton extends StatelessWidget {
                     ),
                     child: Text(
                       unreadCount > 9 ? '9+' : '$unreadCount',
-<<<<<<< HEAD
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: large ? 8.5 : 7,
-=======
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 7,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                         fontWeight: FontWeight.w800,
                         height: 1,
                       ),

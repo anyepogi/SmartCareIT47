@@ -44,30 +44,21 @@ class AppointmentReminderService {
       // Keep the timezone package's default.
     }
 
-<<<<<<< HEAD
     // Must match android:icon in AndroidManifest.xml. Release builds strip
     // unused images, so an icon the manifest doesn't use won't exist.
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/launcher_icon',
-=======
-    const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     );
     const iosSettings = DarwinInitializationSettings();
     const settings = InitializationSettings(
       android: androidSettings,
       iOS: iosSettings,
     );
-<<<<<<< HEAD
     try {
       await _plugin.initialize(settings);
     } catch (_) {
       // Reminders just won't work; this must never stop the app opening.
     }
-=======
-    await _plugin.initialize(settings);
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   }
 
   static Future<void> requestPermissions() async {

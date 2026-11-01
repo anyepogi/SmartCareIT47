@@ -16,11 +16,7 @@
     <application
         android:label="smartcare"
         android:name="${applicationName}"
-<<<<<<< HEAD
         android:icon="@mipmap/launcher_icon"
-=======
-        android:icon="@mipmap/ic_launcher"
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"

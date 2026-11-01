@@ -457,14 +457,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             SafeArea(
               child: LayoutBuilder(
                 builder: (_, constraints) {
-<<<<<<< HEAD
                   final isTablet = _isTablet(context);
                   final horizontalPadding = isTablet
                       ? 24.0
                       : constraints.maxWidth < 380
-=======
-                  final horizontalPadding = constraints.maxWidth < 380
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       ? 12.0
                       : 16.0;
 
@@ -481,13 +477,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           child: Center(
                             child: ConstrainedBox(
-<<<<<<< HEAD
                               constraints: BoxConstraints(
                                 maxWidth: isTablet ? 1080 : 760,
                               ),
-=======
-                              constraints: const BoxConstraints(maxWidth: 760),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -531,11 +523,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                     ],
                                   ),
-<<<<<<< HEAD
                                   const SizedBox(height: 24),
-=======
-                                  const SizedBox(height: 8),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                   _SectionTitle(
                                     title: "Upcoming Appointment",
                                     onViewAll: () {
@@ -545,11 +533,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       );
                                     },
                                   ),
-<<<<<<< HEAD
                                   const SizedBox(height: 8),
-=======
-                                  const SizedBox(height: 10),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                   if (_isLoadingAppointment)
                                     const Padding(
                                       padding: EdgeInsets.symmetric(
@@ -689,11 +673,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                               BoxDecoration(
                                                                 color:
                                                                     const Color(
-<<<<<<< HEAD
                                                                       0xFFFFEBEE,
-=======
-                                                                      0xFFE8F2E4,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                                                     ),
                                                                 shape: BoxShape
                                                                     .circle,
@@ -701,11 +681,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                           child: const Icon(
                                                             Icons.event_busy,
                                                             color: Color(
-<<<<<<< HEAD
                                                               0xFFD32F2F,
-=======
-                                                              0xFF006B2D,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                                             ),
                                                             size: 36,
                                                           ),
@@ -931,11 +907,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                             style: ElevatedButton.styleFrom(
                                                               backgroundColor:
                                                                   const Color(
-<<<<<<< HEAD
                                                                     0xFFD32F2F,
-=======
-                                                                    0xFF006B2D,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                                                   ),
                                                               shape: RoundedRectangleBorder(
                                                                 borderRadius:
@@ -1008,11 +980,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         );
                                       },
                                     ),
-<<<<<<< HEAD
                                   const SizedBox(height: 16),
-=======
-                                  const SizedBox(height: 8),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                   Material(
                                     color: Colors.transparent,
                                     borderRadius: BorderRadius.circular(8),
@@ -1037,19 +1005,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       ),
                                     ),
                                   ),
-<<<<<<< HEAD
                                   const SizedBox(height: 24),
                                   const _SectionTitle(
                                     title: "Doctor Availability",
                                   ),
                                   const SizedBox(height: 8),
-=======
-                                  const SizedBox(height: 8),
-                                  const _SectionTitle(
-                                    title: "Doctor Availability",
-                                  ),
-                                  const SizedBox(height: 10),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                   _DoctorAvailabilityCard(
                                     onRefresh: () {
                                       _showMessage(
@@ -1057,15 +1017,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       );
                                     },
                                   ),
-<<<<<<< HEAD
                                   const SizedBox(height: 24),
                                   const _SectionTitle(title: "Quick Actions"),
                                   const SizedBox(height: 8),
-=======
-                                  const SizedBox(height: 8),
-                                  const _SectionTitle(title: "Quick Actions"),
-                                  const SizedBox(height: 10),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                   _QuickActionGrid(
                                     actions: [
                                       _DashboardAction(
@@ -1216,7 +1170,6 @@ class _DashboardStat extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onInfoTap;
 
-<<<<<<< HEAD
   /// The "!" button next to the Queue # label.
   Widget _infoButton() {
     return InkWell(
@@ -1325,10 +1278,6 @@ class _DashboardStat extends StatelessWidget {
   Widget build(BuildContext context) {
     if (_isTablet(context)) return _buildTablet();
 
-=======
-  @override
-  Widget build(BuildContext context) {
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -1437,15 +1386,9 @@ class _SectionTitle extends StatelessWidget {
       children: [
         Text(
           title,
-<<<<<<< HEAD
           style: TextStyle(
             color: const Color(0xFF1B6F2A),
             fontSize: _isTablet(context) ? 22 : 16,
-=======
-          style: const TextStyle(
-            color: Color(0xFF1B6F2A),
-            fontSize: 16,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -1457,7 +1400,6 @@ class _SectionTitle extends StatelessWidget {
               minimumSize: const Size(0, 0),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-<<<<<<< HEAD
             child: Text(
               "View All",
               style: TextStyle(
@@ -1467,14 +1409,6 @@ class _SectionTitle extends StatelessWidget {
                 fontWeight: _isTablet(context)
                     ? FontWeight.normal
                     : FontWeight.bold,
-=======
-            child: const Text(
-              "View All",
-              style: TextStyle(
-                color: Color(0xFF16751F),
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
               ),
             ),
           ),
@@ -1490,7 +1424,6 @@ class _NoUpcomingAppointmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
     final tablet = _isTablet(context);
     return Container(
       width: double.infinity,
@@ -1535,38 +1468,6 @@ class _NoUpcomingAppointmentCard extends StatelessWidget {
               onPressed: onBook,
               tall: true,
             ),
-=======
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: _cardDecoration(),
-      child: Column(
-        children: [
-          const CircleAvatar(
-            radius: 24,
-            backgroundColor: Color(0xFFDDF6DD),
-            child: Icon(Icons.event_busy, color: Color(0xFF16751F), size: 26),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            "No Upcoming Appointment",
-            style: TextStyle(
-              color: Color(0xFF1A3320),
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            "You don't have any appointment booked yet.",
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF506D54), fontSize: 12),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: _SolidActionButton(label: "Book Now", onPressed: onBook),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           ),
         ],
       ),
@@ -1597,16 +1498,10 @@ class _UpcomingAppointmentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final withDoctor = isAppointmentWithDoctor({'status': status});
-<<<<<<< HEAD
     final tablet = _isTablet(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(tablet ? 20 : 12),
-=======
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       decoration: _cardDecoration(),
       child: Column(
         children: [
@@ -1627,20 +1522,12 @@ class _UpcomingAppointmentCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-<<<<<<< HEAD
                     Text(
                       "Dr. John Carlo A. Camagay",
                       style: TextStyle(
                         color: const Color(0xFF1A3320),
                         fontWeight: FontWeight.bold,
                         fontSize: tablet ? 18 : null,
-=======
-                    const Text(
-                      "Dr. John Carlo A. Camagay",
-                      style: TextStyle(
-                        color: Color(0xFF1A3320),
-                        fontWeight: FontWeight.bold,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -1721,29 +1608,21 @@ class _AppointmentMeta extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-<<<<<<< HEAD
         Icon(
           icon,
           color: const Color(0xFF506D54),
           size: _isTablet(context) ? 17 : 14,
         ),
-=======
-        Icon(icon, color: const Color(0xFF506D54), size: 14),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         const SizedBox(width: 5),
         Expanded(
           child: Text(
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-<<<<<<< HEAD
             style: TextStyle(
               color: const Color(0xFF506D54),
               fontSize: _isTablet(context) ? 14 : 11,
             ),
-=======
-            style: const TextStyle(color: Color(0xFF506D54), fontSize: 11),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           ),
         ),
       ],
@@ -1768,16 +1647,10 @@ class _AiRecommendationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
     final tablet = _isTablet(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(tablet ? 20 : 12),
-=======
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       decoration: BoxDecoration(
         color: const Color(0xFFF8F3FF),
         border: Border.all(color: const Color(0xFFE2D2FF)),
@@ -1786,7 +1659,6 @@ class _AiRecommendationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-<<<<<<< HEAD
           Row(
             children: [
               Icon(
@@ -1800,17 +1672,6 @@ class _AiRecommendationCard extends StatelessWidget {
                 style: TextStyle(
                   color: const Color(0xFF5C28D6),
                   fontSize: tablet ? 22 : 13,
-=======
-          const Row(
-            children: [
-              Icon(Icons.auto_awesome, color: Color(0xFF5C28D6), size: 18),
-              SizedBox(width: 7),
-              Text(
-                "AI Schedule Recommendation",
-                style: TextStyle(
-                  color: Color(0xFF5C28D6),
-                  fontSize: 13,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -1842,19 +1703,11 @@ class _AiRecommendationCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-<<<<<<< HEAD
                       Text(
                         "Recommended for you",
                         style: TextStyle(
                           color: const Color(0xFF6E8D73),
                           fontSize: tablet ? 13 : 10,
-=======
-                      const Text(
-                        "Recommended for you",
-                        style: TextStyle(
-                          color: Color(0xFF6E8D73),
-                          fontSize: 10,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -1866,17 +1719,10 @@ class _AiRecommendationCard extends StatelessWidget {
                                       "your preferred day, time, and location."),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-<<<<<<< HEAD
                         style: TextStyle(
                           color: const Color(0xFF5C28D6),
                           fontWeight: FontWeight.bold,
                           fontSize: tablet ? 18 : 14,
-=======
-                        style: const TextStyle(
-                          color: Color(0xFF5C28D6),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                         ),
                       ),
                       if (suggestion != null) ...[
@@ -1885,15 +1731,9 @@ class _AiRecommendationCard extends StatelessWidget {
                           suggestion!.location,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-<<<<<<< HEAD
                           style: TextStyle(
                             color: const Color(0xFF506D54),
                             fontSize: tablet ? 13 : 10,
-=======
-                          style: const TextStyle(
-                            color: Color(0xFF506D54),
-                            fontSize: 10,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                           ),
                         ),
                       ],
@@ -2009,16 +1849,10 @@ class _DoctorAvailabilityCardState extends State<_DoctorAvailabilityCard> {
           )
         : (_presenceColor(ClinicPresence.notInClinic), "Not in Clinic");
 
-<<<<<<< HEAD
     final tablet = _isTablet(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(tablet ? 20 : 12),
-=======
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2039,17 +1873,10 @@ class _DoctorAvailabilityCardState extends State<_DoctorAvailabilityCard> {
                   children: [
                     Text(
                       doctorName,
-<<<<<<< HEAD
                       style: TextStyle(
                         color: const Color(0xFF1A3320),
                         fontWeight: FontWeight.bold,
                         fontSize: tablet ? 18 : 14,
-=======
-                      style: const TextStyle(
-                        color: Color(0xFF1A3320),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -2123,15 +1950,9 @@ class _AvailabilityStatus extends StatelessWidget {
         const SizedBox(width: 5),
         Text(
           text,
-<<<<<<< HEAD
           style: TextStyle(
             color: const Color(0xFF16751F),
             fontSize: _isTablet(context) ? 14 : 11,
-=======
-          style: const TextStyle(
-            color: Color(0xFF16751F),
-            fontSize: 11,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -2173,7 +1994,6 @@ class _BranchListItem extends StatelessWidget {
     final etaText = presence == ClinicPresence.onTheWay && eta != null
         ? "ETA ${_formatEta(eta)}"
         : null;
-<<<<<<< HEAD
     final tablet = _isTablet(context);
 
     return Container(
@@ -2181,12 +2001,6 @@ class _BranchListItem extends StatelessWidget {
       padding: tablet
           ? const EdgeInsets.symmetric(horizontal: 14, vertical: 12)
           : const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-=======
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFD2E7D1)),
@@ -2202,17 +2016,10 @@ class _BranchListItem extends StatelessWidget {
               children: [
                 Text(
                   branch,
-<<<<<<< HEAD
                   style: TextStyle(
                     color: const Color(0xFF1A3320),
                     fontSize: tablet ? 15 : 13,
                     fontWeight: tablet ? FontWeight.bold : FontWeight.w500,
-=======
-                  style: const TextStyle(
-                    color: Color(0xFF1A3320),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -2223,11 +2030,7 @@ class _BranchListItem extends StatelessWidget {
                     etaText,
                     style: TextStyle(
                       color: statusColor,
-<<<<<<< HEAD
                       fontSize: tablet ? 13 : 11,
-=======
-                      fontSize: 11,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
@@ -2257,11 +2060,7 @@ class _BranchListItem extends StatelessWidget {
                 statusText,
                 style: TextStyle(
                   color: statusColor,
-<<<<<<< HEAD
                   fontSize: tablet ? 13 : 11,
-=======
-                  fontSize: 11,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -2283,31 +2082,19 @@ class _QuickActionGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = 2;
-<<<<<<< HEAD
         final tablet = _isTablet(context);
         final spacing = tablet ? 16.0 : 12.0;
-=======
-        final spacing = 12.0;
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         final itemWidth =
             (constraints.maxWidth - (spacing * (columns - 1))) / columns;
 
         return Wrap(
           alignment: WrapAlignment.center,
           spacing: spacing,
-<<<<<<< HEAD
           runSpacing: tablet ? 16 : 10,
           children: actions.map((action) {
             return SizedBox(
               width: itemWidth,
               height: tablet ? 96 : 82,
-=======
-          runSpacing: 10,
-          children: actions.map((action) {
-            return SizedBox(
-              width: itemWidth,
-              height: 82,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
               child: _QuickActionTile(action: action),
             );
           }).toList(),
@@ -2322,7 +2109,6 @@ class _QuickActionTile extends StatelessWidget {
 
   final _DashboardAction action;
 
-<<<<<<< HEAD
   /// Tablet tile: icon badge on the left, label beside it.
   Widget _buildTablet() {
     return Material(
@@ -2373,10 +2159,6 @@ class _QuickActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     if (_isTablet(context)) return _buildTablet();
 
-=======
-  @override
-  Widget build(BuildContext context) {
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     return Material(
       color: action.backgroundColor,
       borderRadius: BorderRadius.circular(8),
@@ -2427,16 +2209,10 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
     final tablet = _isTablet(context);
     return Container(
       height: tablet ? 30 : 24,
       constraints: BoxConstraints(minWidth: tablet ? 96 : 78),
-=======
-    return Container(
-      height: 24,
-      constraints: const BoxConstraints(minWidth: 78),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(horizontal: 9),
       decoration: BoxDecoration(
@@ -2450,11 +2226,7 @@ class _StatusPill extends StatelessWidget {
           maxLines: 1,
           style: TextStyle(
             color: textColor,
-<<<<<<< HEAD
             fontSize: tablet ? 13 : 10,
-=======
-            fontSize: 10,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -2464,20 +2236,15 @@ class _StatusPill extends StatelessWidget {
 }
 
 class _SolidActionButton extends StatelessWidget {
-<<<<<<< HEAD
   const _SolidActionButton({
     required this.label,
     required this.onPressed,
     this.tall = false,
   });
-=======
-  const _SolidActionButton({required this.label, required this.onPressed});
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
   final String label;
   final VoidCallback onPressed;
 
-<<<<<<< HEAD
   /// Uses the bigger 50px tablet size (for "Book Now").
   final bool tall;
 
@@ -2486,12 +2253,6 @@ class _SolidActionButton extends StatelessWidget {
     final tablet = _isTablet(context);
     return SizedBox(
       height: tablet ? (tall ? 50 : 46) : 36,
-=======
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 36,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
@@ -2499,26 +2260,18 @@ class _SolidActionButton extends StatelessWidget {
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 8),
-<<<<<<< HEAD
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(tablet ? 12 : 8),
           ),
-=======
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,
           child: Text(
             label,
-<<<<<<< HEAD
             style: TextStyle(
               fontSize: tablet ? (tall ? 16 : 14) : 11,
               fontWeight: FontWeight.bold,
             ),
-=======
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           ),
         ),
       ),
@@ -2541,14 +2294,9 @@ class _OutlineActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
     final tablet = _isTablet(context);
     return SizedBox(
       height: tablet ? 46 : 36,
-=======
-    return SizedBox(
-      height: 36,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
@@ -2561,14 +2309,10 @@ class _OutlineActionButton extends StatelessWidget {
           fit: BoxFit.scaleDown,
           child: Text(
             label,
-<<<<<<< HEAD
             style: TextStyle(
               fontSize: tablet ? 14 : 11,
               fontWeight: FontWeight.bold,
             ),
-=======
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           ),
         ),
       ),
@@ -2584,14 +2328,9 @@ class _PurpleActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
     final tablet = _isTablet(context);
     return SizedBox(
       height: tablet ? 46 : 36,
-=======
-    return SizedBox(
-      height: 36,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
@@ -2605,14 +2344,10 @@ class _PurpleActionButton extends StatelessWidget {
           fit: BoxFit.scaleDown,
           child: Text(
             label,
-<<<<<<< HEAD
             style: TextStyle(
               fontSize: tablet ? 14 : 11,
               fontWeight: FontWeight.bold,
             ),
-=======
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           ),
         ),
       ),
@@ -2628,14 +2363,9 @@ class _PurpleOutlineButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
     final tablet = _isTablet(context);
     return SizedBox(
       height: tablet ? 46 : 36,
-=======
-    return SizedBox(
-      height: 36,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
@@ -2644,7 +2374,6 @@ class _PurpleOutlineButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-<<<<<<< HEAD
         child: FittedBox(
           fit: BoxFit.scaleDown,
           child: Text(
@@ -2653,13 +2382,6 @@ class _PurpleOutlineButton extends StatelessWidget {
               fontSize: tablet ? 14 : 11,
               fontWeight: FontWeight.bold,
             ),
-=======
-        child: const FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            "View Alternatives",
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           ),
         ),
       ),
@@ -2735,13 +2457,10 @@ class _DashboardAction {
   final VoidCallback onPressed;
 }
 
-<<<<<<< HEAD
 /// Tablet/desktop layouts (wider than 800px) get the tablet background, a
 /// 1080px column and larger text; phones keep their original layout.
 bool _isTablet(BuildContext context) => MediaQuery.sizeOf(context).width > 800;
 
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 BoxDecoration _cardDecoration() {
   return BoxDecoration(
     color: Colors.white,

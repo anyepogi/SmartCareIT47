@@ -26,11 +26,7 @@ class AppointmentConfirmScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
     final scaffold = Scaffold(
-=======
-    return Scaffold(
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       backgroundColor: const Color(0xFFE8F2E4),
       body: SafeArea(
         child: Column(
@@ -49,7 +45,6 @@ class AppointmentConfirmScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-<<<<<<< HEAD
                           // Calendar check icon (matches Book Appointment action)
                           Container(
                             width: 90,
@@ -62,22 +57,6 @@ class AppointmentConfirmScreen extends StatelessWidget {
                               Icons.event_available,
                               color: Color(0xFF147C28),
                               size: 50,
-=======
-                          // Checkmark Icon
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE6F9E6),
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.check_circle,
-                                color: Color(0xFF0DA94C),
-                                size: 48,
-                              ),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -221,7 +200,6 @@ class AppointmentConfirmScreen extends StatelessWidget {
         ),
       ),
     );
-<<<<<<< HEAD
 
     // Tablets (wider than 800px) show all text 15% larger; phones are
     // unchanged.
@@ -232,8 +210,6 @@ class AppointmentConfirmScreen extends StatelessWidget {
       ).copyWith(textScaler: const TextScaler.linear(1.15)),
       child: scaffold,
     );
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   }
 }
 

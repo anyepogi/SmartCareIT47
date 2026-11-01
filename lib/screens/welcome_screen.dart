@@ -78,17 +78,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< HEAD
-=======
-    const primaryGreen = WelcomeScreen.primaryGreen;
-    const lightGreen = WelcomeScreen.lightGreen;
-
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
     return Scaffold(
       backgroundColor: const Color(0xFFF8FCF7),
       body: Stack(
         children: [
-<<<<<<< HEAD
           LayoutBuilder(
             builder: (context, constraints) {
               if (constraints.maxWidth >= 600) {
@@ -160,69 +153,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                           color: lightGreen,
                                           fontSize: 22,
                                           fontWeight: FontWeight.w800,
-=======
-          Column(
-            children: [
-              Expanded(
-                child: SafeArea(
-                  bottom: false,
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 18),
-                          child: Column(
-                            children: [
-                              const SizedBox(height: 8),
-
-                              /// TOP HEADER
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                mainAxisSize: MainAxisSize.max,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: 44,
-                                        height: 44,
-                                        child: Image.asset(
-                                          "assets/logo.png",
-                                          fit: BoxFit.contain,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      RichText(
-                                        text: const TextSpan(
-                                          children: [
-                                            TextSpan(
-                                              text: "Smart",
-                                              style: TextStyle(
-                                                color: primaryGreen,
-                                                fontSize: 22,
-                                                fontWeight: FontWeight.w800,
-                                              ),
-                                            ),
-                                            TextSpan(
-                                              text: "Care",
-                                              style: TextStyle(
-                                                color: lightGreen,
-                                                fontSize: 22,
-                                                fontWeight: FontWeight.w800,
-                                              ),
-                                            ),
-                                          ],
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                         ),
                                       ),
                                     ],
                                   ),
-<<<<<<< HEAD
                                 ),
                               ],
                             ),
@@ -561,90 +495,11 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                       style: TextStyle(
                                         color: Colors.black54,
                                         fontSize: 12,
-=======
-                                  Row(
-                                    children: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pushNamed(
-                                          context,
-                                          '/about',
-                                        ),
-                                        style: TextButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 8,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          "ABOUT US",
-                                          style: TextStyle(
-                                            color: primaryGreen,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 13,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () => Navigator.pushNamed(
-                                          context,
-                                          '/contact',
-                                        ),
-                                        style: TextButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 8,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          "CONTACT",
-                                          style: TextStyle(
-                                            color: primaryGreen,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 13,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 12),
-                              Divider(
-                                color: primaryGreen.withValues(alpha: 0.15),
-                                thickness: 1,
-                              ),
-                              const SizedBox(height: 28),
-
-                              /// MAIN HERO TITLE
-                              RichText(
-                                text: const TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: "Smart",
-                                      style: TextStyle(
-                                        color: primaryGreen,
-                                        fontSize: 42,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: -0.5,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text: "Care",
-                                      style: TextStyle(
-                                        color: lightGreen,
-                                        fontSize: 42,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: -0.5,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-<<<<<<< HEAD
                               Icon(
                                 Icons.lock_outline,
                                 color: WelcomeScreen.primaryGreen,
@@ -1163,348 +1018,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               ),
             ),
           ),
-=======
-
-                              const SizedBox(height: 12),
-
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 24),
-                                child: Text(
-                                  "Your trusted companion for simpler,\n"
-                                  "smarter healthcare.",
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w600,
-                                    height: 1.4,
-                                    color: Color(0xFF555555),
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 32),
-
-                              /// MAIN ILLUSTRATION
-                              Container(
-                                width: double.infinity,
-                                height: 340,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(28),
-                                ),
-                                child: Image.asset(
-                                  "assets/onboarding.png",
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              /// BUTTON
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 40,
-                                ),
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  height: 45,
-                                  child: _GetStartedButton(
-                                    onPressed: () {
-                                      _showTermsDialog(context);
-                                    },
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 200),
-
-                              const Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  "SmartCare Features",
-                                  style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w800,
-                                    color: primaryGreen,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 20),
-
-                              GridView.count(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                                childAspectRatio: 0.88,
-                                children: const [
-                                  FeatureCard(
-                                    icon: Icons.smart_toy_rounded,
-                                    title: "AI Scheduling",
-                                    description:
-                                        "Automatically suggest the best appointment schedule.",
-                                  ),
-                                  FeatureCard(
-                                    icon: Icons.groups_rounded,
-                                    title: "Real-Time Queue",
-                                    description:
-                                        "View queue position and estimated waiting time.",
-                                  ),
-                                  FeatureCard(
-                                    icon: Icons.location_on_rounded,
-                                    title: "Geofence Tracker",
-                                    description:
-                                        "Track doctor arrival and clinic presence in real time.",
-                                  ),
-                                  FeatureCard(
-                                    icon: Icons.notifications_rounded,
-                                    title: "Smart Alerts",
-                                    description:
-                                        "Receive appointment reminders and appointment updates.",
-                                  ),
-                                  FeatureCard(
-                                    icon: Icons.event_note_rounded,
-                                    title: "Appointment Management",
-                                    description:
-                                        "View, reschedule, or cancel appointments.",
-                                  ),
-                                  FeatureCard(
-                                    icon: Icons.qr_code_scanner_rounded,
-                                    title: "QR Tutorials",
-                                    description:
-                                        "Scan clinic QR codes to watch app tutorials.",
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 24),
-
-                              const Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  "How SmartCare Works",
-                                  style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w800,
-                                    color: primaryGreen,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 20),
-
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                  horizontal: 16,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: primaryGreen.withValues(
-                                        alpha: 0.06,
-                                      ),
-                                      blurRadius: 16,
-                                      spreadRadius: 2,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: const Column(
-                                  children: [
-                                    _WorkStepItem(
-                                      stepNumber: "1",
-                                      icon: Icons.calendar_month_rounded,
-                                      title: "Book Appointment",
-                                    ),
-                                    Divider(
-                                      height: 1,
-                                      color: Color(0xFFEEEEEE),
-                                    ),
-                                    _WorkStepItem(
-                                      stepNumber: "2",
-                                      icon: Icons.psychology_rounded,
-                                      title: "AI Schedule",
-                                    ),
-                                    Divider(
-                                      height: 1,
-                                      color: Color(0xFFEEEEEE),
-                                    ),
-                                    _WorkStepItem(
-                                      stepNumber: "3",
-                                      icon: Icons.location_on_rounded,
-                                      title: "Check Doctor Availability",
-                                    ),
-                                    Divider(
-                                      height: 1,
-                                      color: Color(0xFFEEEEEE),
-                                    ),
-                                    _WorkStepItem(
-                                      stepNumber: "4",
-                                      icon: Icons.groups_rounded,
-                                      title: "Monitor Your Queue",
-                                    ),
-                                    Divider(
-                                      height: 1,
-                                      color: Color(0xFFEEEEEE),
-                                    ),
-                                    _WorkStepItem(
-                                      stepNumber: "5",
-                                      icon: Icons.notifications_rounded,
-                                      title: "Receive Updates",
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              const SizedBox(height: 32),
-
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: primaryGreen.withValues(
-                                        alpha: 0.06,
-                                      ),
-                                      blurRadius: 16,
-                                      spreadRadius: 2,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  children: [
-                                    const Text(
-                                      "Access our SmartCare Tutorial Video",
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                        color: primaryGreen,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    SizedBox(
-                                      width: 180,
-                                      height: 180,
-                                      child: Image.asset(
-                                        "assets/qr.png",
-                                        fit: BoxFit.contain,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              const SizedBox(height: 32),
-
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEAF7EA),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Row(
-                                  children: [
-                                    Icon(
-                                      Icons.shield_outlined,
-                                      size: 32,
-                                      color: WelcomeScreen.primaryGreen,
-                                    ),
-                                    SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            "Your Health. Our Priority.",
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                              color: WelcomeScreen.primaryGreen,
-                                            ),
-                                          ),
-                                          SizedBox(height: 4),
-                                          Text(
-                                            "SmartCare provides a secure, efficient and smarter healthcare experience.",
-                                            style: TextStyle(
-                                              color: Colors.black54,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.lock_outline,
-                                      color: WelcomeScreen.primaryGreen,
-                                      size: 26,
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              const SizedBox(height: 24),
-                            ],
-                          ),
-                        ),
-                        // FOOTER - FULL WIDTH (outside Padding)
-                        ClipPath(
-                          clipper: CurvedTopClipper(),
-                          child: Container(
-                            width: double.infinity,
-                            color: const Color(0xFF16751F),
-                            padding: const EdgeInsets.symmetric(vertical: 1),
-                            child: Column(
-                              children: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(context, '/terms');
-                                  },
-                                  child: const Text(
-                                    'Terms and Conditions',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 5),
-                                const Text(
-                                  '© 2026 SmartCare. All rights reserved.',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                                const SizedBox(height: 15),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (_isSplashVisible) _buildSplashOverlay(),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         ],
       ),
     );
@@ -1518,11 +1031,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           return SlideTransition(
             position: _splashSlideUp,
             child: ClipPath(
-<<<<<<< HEAD
               clipper: _BottomCurvedClipper(
-=======
-              clipper: BottomCurvedClipper(
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                 curveHeight: 30 * _splashSlideUp.value.dy.abs(),
               ),
               child: Container(
@@ -1594,7 +1103,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   void _showTermsDialog(BuildContext context) {
     showDialog(
       context: context,
-<<<<<<< HEAD
       builder: (dialogContext) {
         // Tablets (wider than 800px) get a fixed-width dialog with larger
         // text, matching the Sign Out dialog; phones keep the default.
@@ -1634,32 +1142,17 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     ? const TextStyle(fontSize: 18, height: 1.4)
                     : null,
               ),
-=======
-      builder: (_) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text("Terms and Conditions"),
-          content: const SingleChildScrollView(
-            child: Text(
-              "By using SmartCare, you agree to our terms and conditions. "
-              "Your information will be handled securely and responsibly.",
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-<<<<<<< HEAD
               style: tablet
                   ? TextButton.styleFrom(
                       padding: buttonPadding,
                       textStyle: buttonText,
                     )
                   : null,
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
               child: const Text("Cancel"),
             ),
             ElevatedButton(
@@ -1667,15 +1160,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/sign-in');
               },
-<<<<<<< HEAD
               style: tablet
                   ? ElevatedButton.styleFrom(
                       padding: buttonPadding,
                       textStyle: buttonText,
                     )
                   : null,
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
               child: const Text("I Agree"),
             ),
           ],
@@ -1685,7 +1175,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   }
 }
 
-<<<<<<< HEAD
 // ==========================================
 // HELPER COMPONENTS
 // ==========================================
@@ -1701,18 +1190,6 @@ class _FeatureCard extends StatelessWidget {
     required this.title,
     required this.description,
     this.isTablet = false,
-=======
-class FeatureCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String description;
-
-  const FeatureCard({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.description,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   });
 
   @override
@@ -1720,14 +1197,10 @@ class FeatureCard extends StatelessWidget {
     const green = WelcomeScreen.primaryGreen;
 
     return Container(
-<<<<<<< HEAD
       padding: EdgeInsets.symmetric(
         horizontal: isTablet ? 20 : 16,
         vertical: isTablet ? 24 : 20,
       ),
-=======
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -1743,13 +1216,8 @@ class FeatureCard extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-<<<<<<< HEAD
           Icon(icon, size: isTablet ? 54 : 48, color: green),
           SizedBox(height: isTablet ? 16 : 12),
-=======
-          Icon(icon, size: 48, color: green),
-          const SizedBox(height: 12),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
@@ -1757,22 +1225,14 @@ class FeatureCard extends StatelessWidget {
               maxLines: 1,
               softWrap: false,
               textAlign: TextAlign.center,
-<<<<<<< HEAD
               style: TextStyle(
                 color: green,
                 fontWeight: FontWeight.w800,
                 fontSize: isTablet ? 18 : 16,
-=======
-              style: const TextStyle(
-                color: green,
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                 height: 1.2,
               ),
             ),
           ),
-<<<<<<< HEAD
           SizedBox(height: isTablet ? 10 : 8),
           Text(
             description,
@@ -1781,16 +1241,6 @@ class FeatureCard extends StatelessWidget {
               fontSize: isTablet ? 13.5 : 12.5,
               fontWeight: FontWeight.w500,
               color: const Color(0xFF666666),
-=======
-          const SizedBox(height: 8),
-          Text(
-            description,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF666666),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
               height: 1.35,
             ),
           ),
@@ -1931,11 +1381,7 @@ class _GetStartedButtonState extends State<_GetStartedButton>
   }
 }
 
-<<<<<<< HEAD
 class _CurvedTopClipper extends CustomClipper<Path> {
-=======
-class CurvedTopClipper extends CustomClipper<Path> {
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   @override
   Path getClip(Size size) {
     final path = Path();
@@ -1955,19 +1401,11 @@ class CurvedTopClipper extends CustomClipper<Path> {
   }
 
   @override
-<<<<<<< HEAD
   bool shouldReclip(_CurvedTopClipper oldClipper) => false;
 }
 
 class _BottomCurvedClipper extends CustomClipper<Path> {
   const _BottomCurvedClipper({required this.curveHeight});
-=======
-  bool shouldReclip(CurvedTopClipper oldClipper) => false;
-}
-
-class BottomCurvedClipper extends CustomClipper<Path> {
-  const BottomCurvedClipper({required this.curveHeight});
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
 
   final double curveHeight;
 
@@ -1988,10 +1426,6 @@ class BottomCurvedClipper extends CustomClipper<Path> {
   }
 
   @override
-<<<<<<< HEAD
   bool shouldReclip(_BottomCurvedClipper oldClipper) =>
-=======
-  bool shouldReclip(BottomCurvedClipper oldClipper) =>
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
       oldClipper.curveHeight != curveHeight;
 }

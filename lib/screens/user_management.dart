@@ -355,7 +355,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     super.dispose();
   }
 
-<<<<<<< HEAD
   // Fixed column widths keep the sticky header aligned with the rows.
   static const List<(String, double)> _columns = [
     ('USER ID', 80),
@@ -597,8 +596,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-=======
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -607,7 +604,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         currentItem: SmartCareBottomItem.profile,
       ),
       body: SafeArea(
-<<<<<<< HEAD
         child: Column(
           children: [
             const SmartCareDashboardHeader(
@@ -616,16 +612,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             ),
             Expanded(
               child: Padding(
-=======
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              const SmartCareDashboardHeader(
-                title: "User Management",
-                subtitle: "Manage user accounts and roles.",
-              ),
-              Padding(
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 26),
                 child: Center(
                   child: ConstrainedBox(
@@ -635,20 +621,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       children: [
                         TextField(
                           controller: _searchController,
-<<<<<<< HEAD
                           style: TextStyle(fontSize: _tablet ? 16 : null),
                           decoration: InputDecoration(
                             hintText: 'Search by name, email, or phone...',
                             hintStyle: TextStyle(
                               color: const Color(0xFFBBBBBB),
                               fontSize: _tablet ? 16 : 14,
-=======
-                          decoration: InputDecoration(
-                            hintText: 'Search by name, email, or phone...',
-                            hintStyle: const TextStyle(
-                              color: Color(0xFFBBBBBB),
-                              fontSize: 14,
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                             ),
                             prefixIcon: const Icon(
                               Icons.search,
@@ -675,248 +653,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-<<<<<<< HEAD
                         Expanded(child: _buildTable()),
-=======
-                        if (_isLoading)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 40),
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: Color(0xFF006837),
-                              ),
-                            ),
-                          )
-                        else if (_error != null)
-                          Column(
-                            children: [
-                              Text(
-                                _error!,
-                                style: const TextStyle(color: Colors.red),
-                              ),
-                              TextButton(
-                                onPressed: _load,
-                                child: const Text('Retry'),
-                              ),
-                            ],
-                          )
-                        else if (_filteredUsers.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 40),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.people_outline,
-                                  size: 48,
-                                  color: Colors.grey[300],
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No users found',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        else
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFFE3EFE1),
-                                width: 1,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0x0A000000),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: DataTable(
-                                headingRowColor: WidgetStateColor.resolveWith(
-                                  (states) => const Color(0xFFF6FBF5),
-                                ),
-                                headingRowHeight: 56,
-                                dataRowMinHeight: 60,
-                                dataRowMaxHeight: 72,
-                                columnSpacing: 20,
-                                headingTextStyle: const TextStyle(
-                                  color: Color(0xFF1A3320),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                columns: const [
-                                  DataColumn(label: Text('USER ID')),
-                                  DataColumn(label: Text('EMAIL')),
-                                  DataColumn(label: Text('FULL NAME')),
-                                  DataColumn(label: Text('CONTACT NUMBER')),
-                                  DataColumn(label: Text('GENDER')),
-                                  DataColumn(label: Text('ADDRESS')),
-                                  DataColumn(label: Text('EMERGENCY NUMBER')),
-                                  DataColumn(label: Text('ROLE')),
-                                  DataColumn(label: Text('ACTION')),
-                                ],
-                                rows: _filteredUsers.map((user) {
-                                  return DataRow(
-                                    cells: [
-                                      DataCell(
-                                        Text(
-                                          "${user['user_id']}",
-                                          style: const TextStyle(fontSize: 13),
-                                        ),
-                                      ),
-                                      DataCell(
-                                        Text(
-                                          user['email'] as String,
-                                          style: const TextStyle(fontSize: 13),
-                                        ),
-                                      ),
-                                      DataCell(
-                                        Text(
-                                          user['full_name'] as String,
-                                          style: const TextStyle(fontSize: 13),
-                                        ),
-                                      ),
-                                      DataCell(
-                                        Text(
-                                          user['contact_number'] as String,
-                                          style: const TextStyle(fontSize: 13),
-                                        ),
-                                      ),
-                                      DataCell(
-                                        Text(
-                                          user['gender'] as String,
-                                          style: const TextStyle(fontSize: 13),
-                                        ),
-                                      ),
-                                      DataCell(
-                                        SizedBox(
-                                          width: 160,
-                                          child: Text(
-                                            user['address'] as String,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      DataCell(
-                                        Text(
-                                          user['emergency_contact'] as String,
-                                          style: const TextStyle(fontSize: 13),
-                                        ),
-                                      ),
-                                      DataCell(
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: _roleBackgroundColor(
-                                              user['role'] as String,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            (user['role'] as String)
-                                                .toUpperCase(),
-                                            style: TextStyle(
-                                              color: _roleTextColor(
-                                                user['role'] as String,
-                                              ),
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      DataCell(
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF006B2D),
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: Material(
-                                                color: Colors.transparent,
-                                                child: InkWell(
-                                                  onTap: () => _editUser(user),
-                                                  borderRadius:
-                                                      BorderRadius.circular(4),
-                                                  child: const Padding(
-                                                    padding: EdgeInsets.all(6),
-                                                    child: Icon(
-                                                      Icons.edit,
-                                                      color: Colors.white,
-                                                      size: 16,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Container(
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFC41C3B),
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: Material(
-                                                color: Colors.transparent,
-                                                child: InkWell(
-                                                  onTap: () =>
-                                                      _deleteUser(user),
-                                                  borderRadius:
-                                                      BorderRadius.circular(4),
-                                                  child: const Padding(
-                                                    padding: EdgeInsets.all(6),
-                                                    child: Icon(
-                                                      Icons.delete,
-                                                      color: Colors.white,
-                                                      size: 16,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          ),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
                       ],
                     ),
                   ),
                 ),
               ),
-<<<<<<< HEAD
             ),
           ],
-=======
-            ],
-          ),
->>>>>>> 4995fb1d0934045d389f7d2f88d3f93de5b6a13a
         ),
       ),
     );
