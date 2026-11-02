@@ -1,23 +1,17 @@
-import 'dart:io' show Platform;
-
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 class ApiConfig {
   ApiConfig._();
 
-  /// Set only for release builds:
-  ///   flutter build apk --dart-define=API_BASE_URL=https://smartcare-ccs.com
-  /// Empty on a normal `flutter run`, so the app uses local XAMPP.
+  /// Optional override, e.g. to test against local XAMPP from the emulator:
+  ///   flutter run --dart-define=API_BASE_URL=http://10.0.2.2/smartcare.1
   static const String _buildBaseUrl = String.fromEnvironment('API_BASE_URL');
 
-  /// Backend URL. Uses API_BASE_URL if it was set, otherwise local XAMPP.
-  /// The Android emulator reaches the PC through 10.0.2.2, not localhost.
+  /// Backend URL. Uses API_BASE_URL if it was set, otherwise Hostinger.
   static String get baseUrl {
     if (_buildBaseUrl.isNotEmpty) return _buildBaseUrl;
-    if (kIsWeb) return 'http://localhost/smartcare.1';
-    if (Platform.isAndroid) return 'http://10.0.2.2/smartcare.1';
-    return 'http://localhost/smartcare.1';
+
+    return 'https://smartcare-ccs.com';
   }
 
   /// Login token from sign in, sent as X-Auth-Token on every request.
