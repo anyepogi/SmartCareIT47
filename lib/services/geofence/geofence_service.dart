@@ -165,6 +165,29 @@ class GeofenceService {
     });
   }
 
+  /// Secretary only: marks the doctor as inside [location] (or as gone
+  /// from it) by hand, for when his geofence isn't working. Arriving also
+  /// sends patients the "Doctor Arrived" notification, once a day.
+  static Future<String> setManualPresence({
+    required String location,
+    required bool isInside,
+  }) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/ai_geofence/manual_presence.php',
+    );
+
+    final response = await ApiConfig.post(
+      uri,
+      body: jsonEncode({'location': location, 'is_inside': isInside}),
+    );
+
+    final Map<String, dynamic> body = jsonDecode(response.body);
+    if (response.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to update the doctor status.');
+    }
+    return body['message'] as String;
+  }
+
   /// Sends the doctor's GPS position so the backend can update the ETA
   /// patients see. Called every 2 minutes while tracking.
   static Future<void> updatePosition({

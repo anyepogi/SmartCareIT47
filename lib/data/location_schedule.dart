@@ -96,6 +96,10 @@ String appointmentTimeLabel(Map<String, dynamic> appointment) {
       '';
 }
 
+/// The appointment ID as shown to people, 7 digits like "0000088".
+String appointmentIdLabel(Map<String, dynamic> appointment) =>
+    '${appointment['appointment_id'] ?? ''}'.padLeft(7, '0');
+
 /// "Walk-in" or "Online", from the backend's booking_type.
 String bookingTypeLabel(Map<String, dynamic> appointment) =>
     appointment['booking_type'] == 'walk_in' ? 'Walk-in' : 'Online';

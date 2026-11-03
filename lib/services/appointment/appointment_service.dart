@@ -61,6 +61,39 @@ class AppointmentService {
     return BookingResult.fromJson(body);
   }
 
+  /// Slots left in a clinic session (max 25 per clinic per day, online and
+  /// walk-in together). When rescheduling, pass excludeAppointmentId so the
+  /// patient's own appointment isn't counted.
+  static Future<({int capacity, int used, int remaining})> getSessionSlots({
+    required String location,
+    required String date,
+    int? excludeAppointmentId,
+  }) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/appointment/get_session_slots.php',
+    );
+
+    final response = await ApiConfig.post(
+      uri,
+      body: jsonEncode({
+        'location': location,
+        'date': date,
+        'exclude_appointment_id': excludeAppointmentId,
+      }),
+    );
+
+    final Map<String, dynamic> body = jsonDecode(response.body);
+    if (response.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load session slots.');
+    }
+
+    return (
+      capacity: body['capacity'] as int,
+      used: body['used'] as int,
+      remaining: body['remaining'] as int,
+    );
+  }
+
   /// Adds a walk-in patient (secretary only). Walk-ins share the queue with
   /// online bookings and show as SW + number. contactNumber is required,
   /// middleName and email are optional.

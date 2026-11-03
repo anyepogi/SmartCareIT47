@@ -742,7 +742,7 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
           children: [
             _cell(
               0,
-              Text("${appointment['appointment_id']}", style: idStyle),
+              Text(appointmentIdLabel(appointment), style: idStyle),
               tablet,
             ),
             _cell(

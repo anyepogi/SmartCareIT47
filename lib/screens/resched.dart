@@ -309,6 +309,8 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
                                 SessionInfoCard(
                                   location: selectedLocation ?? '',
                                   date: selectedDate,
+                                  excludeAppointmentId:
+                                      widget.existingAppointmentId,
                                 ),
                                 SizedBox(height: gap),
                                 SizedBox(

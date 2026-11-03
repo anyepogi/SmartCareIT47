@@ -16,14 +16,11 @@ class SecretaryGeofenceScreen extends StatefulWidget {
 }
 
 class _SecretaryGeofenceScreenState extends State<SecretaryGeofenceScreen> {
-  // Geofencing tracks the DOCTOR's presence, not the secretary's — this
-  // screen just lets the secretary operate tracking (and edit the same
-  // clinic coordinates) on the doctor's behalf. [LocationTracker.instance]
-  // is only shared within THIS device's own app process though — on the
-  // doctor's own separate phone it's a different instance entirely — so
-  // whether tracking is "Active" is synced across devices via the backend
-  // ([LocationTracker.serverIsTracking], polled in [_pollTrackingStatus]),
-  // not by the singleton itself.
+  // Geofencing tracks the DOCTOR's presence, not the secretary's. Only the
+  // doctor can start or stop tracking (from his own phone). Here the
+  // secretary can only edit the clinic coordinates, see if the doctor's
+  // tracking is on (polled from the backend in [_pollTrackingStatus]),
+  // and use Manual Check-in.
   final _tracker = LocationTracker.instance;
 
   late final Map<String, TextEditingController> _latControllers;
@@ -41,6 +38,11 @@ class _SecretaryGeofenceScreenState extends State<SecretaryGeofenceScreen> {
   String? _doctorName;
   int? _doctorUserId;
   Timer? _statusPollTimer;
+
+  // What patients currently see for each clinic, for the Manual Check-in
+  // card. Null until the first load.
+  Map<String, ClinicAvailability>? _clinicStatus;
+  String? _savingPresenceFor;
 
   @override
   void initState() {
@@ -93,9 +95,75 @@ class _SecretaryGeofenceScreenState extends State<SecretaryGeofenceScreen> {
   /// Active/Inactive status stays in sync even though his tracking doesn't
   /// run on this device.
   void _pollTrackingStatus() {
+    _loadClinicStatus();
     final doctorUserId = _doctorUserId;
     if (doctorUserId == null) return;
     _tracker.refreshServerTrackingStatus(doctorUserId);
+  }
+
+  Future<void> _loadClinicStatus() async {
+    try {
+      final status = await GeofenceService.getStatus();
+      if (!mounted) return;
+      setState(() => _clinicStatus = status.clinics);
+    } catch (_) {
+      // Keep the last known status; the next poll tries again.
+    }
+  }
+
+  /* Manual Check-in: lets the secretary mark the doctor as inside a
+  clinic (or gone from it) when his geofence isn't working. Asks first,
+  because arriving also notifies the patients booked there today. */
+  Future<void> _setManualPresence(String location, bool isInside) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(isInside ? 'Mark as Arrived?' : 'Mark as Left?'),
+        content: Text(
+          isInside
+              ? 'Patients will see the doctor as "In Clinic" at $location, '
+                    'and those booked there today will be notified that he '
+                    'has arrived.'
+              : 'Patients will no longer see the doctor as "In Clinic" at '
+                    '$location.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0F6B2F),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _savingPresenceFor = location);
+    try {
+      final message = await GeofenceService.setManualPresence(
+        location: location,
+        isInside: isInside,
+      );
+      await _loadClinicStatus();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _savingPresenceFor = null);
+    }
   }
 
   /// Pulls the latest saved coordinates from the database — in case they
@@ -131,47 +199,13 @@ class _SecretaryGeofenceScreenState extends State<SecretaryGeofenceScreen> {
     super.dispose();
   }
 
-  Future<void> _startTracking() async {
-    final targets = <String, (double, double)>{};
-    for (final location in clinicLocations) {
-      final lat = double.tryParse(_latControllers[location]!.text);
-      final lon = double.tryParse(_lonControllers[location]!.text);
-      if (lat != null && lon != null) targets[location] = (lat, lon);
-    }
-
-    try {
-      final doctor = await GeofenceService.getDoctorAccount();
-      if (!mounted) return;
-      setState(() {
-        _doctorName = doctor.name;
-        _doctorUserId = doctor.userId;
-      });
-      await _tracker.start(userId: doctor.userId, targets: targets);
-    } catch (e) {
-      if (!mounted) return;
-      _tracker.locationError.value =
-          'Could not find the doctor account to track: $e';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: Listenable.merge([
-        _tracker.isTracking,
-        _tracker.serverIsTracking,
-        _tracker.locationError,
-        _tracker.distances,
-        _tracker.serverDistances,
-        _tracker.insideLocations,
-      ]),
+      animation: _tracker.serverIsTracking,
       builder: (context, _) {
-        final isTracking = _tracker.isTracking.value;
-        // "Active" also when tracking was started from the doctor's own
-        // device — not just this device's own GPS stream — so both
-        // screens agree on whether tracking is on.
-        final displayIsTracking = isTracking || _tracker.serverIsTracking.value;
-        final locationError = _tracker.locationError.value;
+        // The doctor's tracking status, read from the backend.
+        final isTracking = _tracker.serverIsTracking.value;
         final tablet = _isTablet(context);
         final sectionTitleStyle = TextStyle(
           color: const Color(0xFF1B6F2A),
@@ -279,21 +313,21 @@ class _SecretaryGeofenceScreenState extends State<SecretaryGeofenceScreen> {
                                         Row(
                                           children: [
                                             Icon(
-                                              displayIsTracking
+                                              isTracking
                                                   ? Icons.check_circle
                                                   : Icons.pause_circle_filled,
-                                              color: displayIsTracking
+                                              color: isTracking
                                                   ? const Color(0xFF0F6B2F)
                                                   : const Color(0xFFFF9800),
                                               size: 18,
                                             ),
                                             const SizedBox(width: 6),
                                             Text(
-                                              displayIsTracking
+                                              isTracking
                                                   ? 'Active'
                                                   : 'Inactive',
                                               style: TextStyle(
-                                                color: displayIsTracking
+                                                color: isTracking
                                                     ? const Color(0xFF0F6B2F)
                                                     : const Color(0xFFFF9800),
                                                 fontSize: tablet ? 16 : 14,
@@ -324,11 +358,11 @@ class _SecretaryGeofenceScreenState extends State<SecretaryGeofenceScreen> {
                             // Geofence Tracker
                             Text('Geofence Tracker', style: sectionTitleStyle),
                             const SizedBox(height: 12),
-                            _buildTrackerControls(
-                              isTracking,
-                              displayIsTracking,
-                              locationError,
-                            ),
+                            _buildTrackerStatus(isTracking),
+                            const SizedBox(height: 24),
+                            Text('Manual Check-in', style: sectionTitleStyle),
+                            const SizedBox(height: 12),
+                            _buildManualCheckIn(),
                             const SizedBox(height: 24),
                             Text('Clinic Locations', style: sectionTitleStyle),
                             const SizedBox(height: 12),
@@ -354,49 +388,9 @@ class _SecretaryGeofenceScreenState extends State<SecretaryGeofenceScreen> {
     );
   }
 
-  Widget _buildTrackerControls(
-    bool isTracking,
-    bool displayIsTracking,
-    String? locationError,
-  ) {
+  /// Read-only. Only the doctor can start or stop tracking.
+  Widget _buildTrackerStatus(bool isTracking) {
     final tablet = _isTablet(context);
-    final startButton = ElevatedButton.icon(
-      onPressed: displayIsTracking ? null : _startTracking,
-      icon: const Icon(Icons.play_arrow, size: 18),
-      label: const Text('Start Tracking'),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF0F6B2F),
-        disabledBackgroundColor: const Color(0xFFD5E4D5),
-        foregroundColor: Colors.white,
-        disabledForegroundColor: const Color(0xFF999999),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        textStyle: tablet
-            ? const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)
-            : null,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
-    );
-    final stopButton = OutlinedButton.icon(
-      onPressed: !displayIsTracking
-          ? null
-          : () {
-              final doctorUserId = _doctorUserId;
-              if (doctorUserId == null) return;
-              _tracker.stopForUser(doctorUserId);
-            },
-      icon: const Icon(Icons.stop, size: 18),
-      label: const Text('Stop'),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: const Color(0xFF0F6B2F),
-        disabledForegroundColor: const Color(0xFF999999),
-        side: const BorderSide(color: Color(0xFF0F6B2F)),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        textStyle: tablet
-            ? const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)
-            : null,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
-    );
 
     return Container(
       width: double.infinity,
@@ -418,103 +412,179 @@ class _SecretaryGeofenceScreenState extends State<SecretaryGeofenceScreen> {
         children: [
           Text(
             isTracking
-                ? 'Tracking all clinic locations for the doctor.'
-                : displayIsTracking
-                ? 'Tracking is active from the doctor\'s own device.'
-                : 'Start tracking to monitor all clinic locations for the doctor.',
+                ? 'The doctor is tracking all clinic locations from his phone.'
+                : 'Tracking is off. Only the doctor can start tracking from his own phone.',
             style: TextStyle(
               color: const Color(0xFF506D54),
               fontSize: tablet ? 14 : 12,
+              height: 1.4,
             ),
           ),
-          if (locationError != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              locationError,
-              style: const TextStyle(color: Color(0xFFC41E3A), fontSize: 12),
-            ),
-          ],
-          const SizedBox(height: 16),
-          // Start Tracking and Stop Buttons: fixed-width and right-aligned
-          // on tablets, sharing the full width on phones.
-          if (tablet)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                SizedBox(width: 200, height: 46, child: startButton),
-                const SizedBox(width: 12),
-                SizedBox(width: 200, height: 46, child: stopButton),
-              ],
-            )
-          else
-            Row(
-              children: [
-                Expanded(child: startButton),
-                const SizedBox(width: 12),
-                Expanded(child: stopButton),
-              ],
-            ),
         ],
       ),
     );
   }
 
-  String _distanceLabel(String clinicName) {
-    // Falls back to the doctor's own device's last-reported distance when
-    // this device isn't the one actually driving GPS tracking.
-    final distance =
-        _tracker.distances.value[clinicName] ??
-        _tracker.serverDistances.value[clinicName];
-    if (distance == null) return 'Distance: —';
-    return 'Distance: ${distance.toStringAsFixed(2)} meters';
-  }
+  Widget _buildManualCheckIn() {
+    final tablet = _isTablet(context);
+    final status = _clinicStatus;
 
-  double? _distanceMeters(String clinicName) =>
-      _tracker.distances.value[clinicName] ??
-      _tracker.serverDistances.value[clinicName];
-
-  Widget _buildStatusPill(String clinicName, bool isTracking) {
-    final isInside =
-        isTracking && _tracker.insideLocations.value.contains(clinicName);
-    final label = !isTracking
-        ? 'Waiting...'
-        : isInside
-        ? 'Inside'
-        : 'Outside';
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      width: double.infinity,
+      padding: tablet ? const EdgeInsets.all(20) : const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isInside ? const Color(0xFFE3F8E3) : const Color(0xFFFFF1DE),
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFD5E4D5)),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F6B2F).withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isInside ? const Color(0xFF0F6B2F) : const Color(0xFFB45309),
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "If the doctor's geofence isn't working, mark him as arrived or "
+            'left here. Patients will see this right away.',
+            style: TextStyle(
+              color: const Color(0xFF506D54),
+              fontSize: tablet ? 14 : 12,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final location in clinicLocations)
+            _buildManualCheckInRow(location, status?[location]),
+        ],
       ),
     );
   }
 
-  /// Tablet clinic card: status pill top-right, latitude / longitude /
-  /// distance side by side.
+  Widget _buildManualCheckInRow(String location, ClinicAvailability? clinic) {
+    final presence = clinic?.presence;
+    final isInClinic = presence == ClinicPresence.inClinic;
+    final isSaving = _savingPresenceFor == location;
+    final (label, color, background) = switch (presence) {
+      ClinicPresence.inClinic => (
+        'In Clinic',
+        const Color(0xFF0F6B2F),
+        const Color(0xFFE3F8E3),
+      ),
+      ClinicPresence.onTheWay => (
+        'On the way',
+        const Color(0xFF1565C0),
+        const Color(0xFFE3EEFB),
+      ),
+      ClinicPresence.notInClinic => (
+        'Not in clinic',
+        const Color(0xFFB45309),
+        const Color(0xFFFFF1DE),
+      ),
+      null => ('Loading...', const Color(0xFF999999), const Color(0xFFF2F2F2)),
+    };
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  location,
+                  style: const TextStyle(
+                    color: Color(0xFF1B6F2A),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: background,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 132,
+            height: 38,
+            child: isInClinic
+                ? OutlinedButton.icon(
+                    onPressed: _savingPresenceFor != null
+                        ? null
+                        : () => _setManualPresence(location, false),
+                    icon: const Icon(Icons.logout, size: 16),
+                    label: const Text('Mark Left'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFC41E3A),
+                      side: const BorderSide(color: Color(0xFFC41E3A)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  )
+                : ElevatedButton.icon(
+                    onPressed: presence == null || _savingPresenceFor != null
+                        ? null
+                        : () => _setManualPresence(location, true),
+                    icon: isSaving
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.how_to_reg, size: 16),
+                    label: const Text('Mark Arrived'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0F6B2F),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: const Color(0xFFD5E4D5),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Tablet clinic card: latitude and longitude side by side.
   Widget _buildTabletClinicCard(String clinicName, bool isTracking) {
     final latController = _latControllers[clinicName]!;
     final lonController = _lonControllers[clinicName]!;
-    final isInside = _tracker.insideLocations.value.contains(clinicName);
-    final distance = _distanceMeters(clinicName);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(
-          color: isInside ? const Color(0xFF0F6B2F) : const Color(0xFFD5E4D5),
-          width: isInside ? 1.5 : 1,
-        ),
+        border: Border.all(color: const Color(0xFFD5E4D5)),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -553,7 +623,6 @@ class _SecretaryGeofenceScreenState extends State<SecretaryGeofenceScreen> {
                   ),
                 ),
               ),
-              _buildStatusPill(clinicName, isTracking),
             ],
           ),
           const SizedBox(height: 16),
@@ -587,31 +656,6 @@ class _SecretaryGeofenceScreenState extends State<SecretaryGeofenceScreen> {
                   },
                 ),
               ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Distance',
-                      style: TextStyle(
-                        color: Color(0xFF506D54),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      distance == null ? '—' : _formatDistance(distance),
-                      style: const TextStyle(
-                        color: Color(0xFF1A3320),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ],
@@ -619,27 +663,16 @@ class _SecretaryGeofenceScreenState extends State<SecretaryGeofenceScreen> {
     );
   }
 
-  String _statusLabel(String clinicName, bool isTracking) {
-    if (!isTracking) return 'Status: Waiting...';
-    return _tracker.insideLocations.value.contains(clinicName)
-        ? 'Status: Inside'
-        : 'Status: Outside';
-  }
-
   Widget _buildClinicInfoCard(String clinicName, bool isTracking) {
     final latController = _latControllers[clinicName]!;
     final lonController = _lonControllers[clinicName]!;
-    final isInside = _tracker.insideLocations.value.contains(clinicName);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(
-          color: isInside ? const Color(0xFF0F6B2F) : const Color(0xFFD5E4D5),
-          width: isInside ? 1.5 : 1,
-        ),
+        border: Border.all(color: const Color(0xFFD5E4D5)),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -715,30 +748,6 @@ class _SecretaryGeofenceScreenState extends State<SecretaryGeofenceScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _distanceLabel(clinicName),
-                style: const TextStyle(
-                  color: Color(0xFF506D54),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                _statusLabel(clinicName, isTracking),
-                style: TextStyle(
-                  color: isInside
-                      ? const Color(0xFF0F6B2F)
-                      : const Color(0xFFFF9800),
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -748,18 +757,6 @@ class _SecretaryGeofenceScreenState extends State<SecretaryGeofenceScreen> {
 /// Tablet/desktop layouts (wider than 800px) get a centered 1080 container,
 /// larger text and the redesigned clinic cards; phones keep their layout.
 bool _isTablet(BuildContext context) => MediaQuery.sizeOf(context).width > 800;
-
-/// "850 m" under a kilometre, otherwise "11,197.7 km".
-String _formatDistance(double meters) {
-  if (meters < 1000) return '${meters.round()} m';
-  final km = (meters / 1000).toStringAsFixed(1);
-  final parts = km.split('.');
-  final whole = parts[0].replaceAllMapped(
-    RegExp(r'\B(?=(\d{3})+(?!\d))'),
-    (_) => ',',
-  );
-  return '$whole.${parts[1]} km';
-}
 
 class _CoordinateField extends StatefulWidget {
   const _CoordinateField({
