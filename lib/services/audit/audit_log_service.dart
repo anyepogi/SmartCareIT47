@@ -40,8 +40,7 @@ class AuditLogEntry {
   }
 }
 
-/// The fixed set of resource types the app ever logs — matches exactly
-/// what the backend passes to log_audit() across every endpoint.
+/// Resource types the backend logs. Must match the log_audit() calls.
 const List<String> auditResourceTypes = [
   'Appointment',
   'User',
@@ -50,8 +49,7 @@ const List<String> auditResourceTypes = [
   'Contact',
 ];
 
-/// The fixed set of roles that can perform a logged action — matches
-/// exactly what audit_lookup_user() in the backend can resolve.
+/// Roles that can show up in the logs. Must match audit_lookup_user().
 const List<String> auditRoles = [
   'patient',
   'doctor',
@@ -63,15 +61,10 @@ const List<String> auditRoles = [
 class AuditLogService {
   AuditLogService._();
 
-  /* This asks the backend for the list of audit log entries, newest
-  first. All the filters are optional. If you leave them empty, it
-  returns everything (up to the limit). action filters by type of action
-  like CREATE or UPDATE. resourceType filters by what was changed, like
-  Appointment or User. role filters by who did it, like doctor or
-  patient. search looks for matching text in the description, resource
-  id, or the name of the person who did it. startDate and endDate (in
-  yyyy-MM-dd format) limit the results to that date range. This is what
-  powers the filters on the Audit Logs screen. */
+  /// Audit log entries, newest first. All filters are optional:
+  /// action (CREATE, UPDATE...), resourceType (Appointment, User...), role,
+  /// search (description, resource id, or name), and startDate/endDate in
+  /// yyyy-MM-dd.
   static Future<List<AuditLogEntry>> getLogs({
     String? action,
     String? resourceType,

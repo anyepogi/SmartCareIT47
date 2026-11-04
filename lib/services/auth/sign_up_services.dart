@@ -6,14 +6,9 @@ import 'resend_cooldown_exception.dart';
 class SignUpService {
   SignUpService._();
 
-  /* This is the first step of signing up. It sends all the form info
-  (name, birthday, gender, email, password, phone) to the backend, and
-  the backend emails a 4 digit code to that address. The backend does
-  not create the account yet, it just saves the form info for a few
-  minutes while it waits for the code to be typed back in. This same
-  function is also used to resend the code if the user did not get it.
-  If they ask for a new code too fast, it throws a ResendCooldownException
-  so the screen can show how long to wait. */
+  /// Sign up step 1: sends the form and emails a 4 digit code. The account
+  /// isn't created yet. Also used for resend. Returns how many seconds the
+  /// code is valid; throws ResendCooldownException if asked again too soon.
   static Future<int> sendVerificationCode({
     required String firstName,
     required String middleName,
@@ -58,12 +53,8 @@ class SignUpService {
     return (body['expires_in_seconds'] as num?)?.toInt() ?? 300;
   }
 
-  /* This is the second and last step of signing up. It sends the code
-  the user typed back to the backend. If it matches the code that was
-  emailed and it has not expired, the backend now actually creates the
-  account using the form info it saved earlier, and returns the new
-  account's info. If the code is wrong or expired, it throws an error
-  and no account gets created. */
+  /// Sign up step 2: checks the code and creates the account. Returns the
+  /// new account's info, or throws if the code is wrong or expired.
   static Future<Map<String, dynamic>> verifyAndRegister({
     required String email,
     required String code,

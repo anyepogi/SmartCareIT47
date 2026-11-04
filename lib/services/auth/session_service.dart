@@ -1,7 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Persists the logged-in user's session on-device so the app can restore
-/// it on the next launch, without needing a backend call.
+/// Saves the logged in user on the device so they stay logged in after
+/// the app is reopened.
 class SessionService {
   SessionService._();
 
@@ -12,10 +12,7 @@ class SessionService {
   static const _keyRole = 'session_role';
   static const _keyToken = 'session_token';
 
-  /* This saves the logged in user's info on the phone itself, using
-  SharedPreferences (a simple storage built into the phone, like a small
-  file). This way, when the user closes and reopens the app, it can
-  remember who was logged in without asking them to log in again. */
+  /// Saves the session in SharedPreferences.
   static Future<void> save({
     required int userId,
     required String email,
@@ -33,9 +30,8 @@ class SessionService {
     await prefs.setString(_keyToken, token);
   }
 
-  /// Returns the saved session, or null if the user is not logged in.
-  /// A session saved by an older app version has no login token, so it
-  /// is treated as logged out and the user signs in again.
+  /// The saved session, or null if logged out. Sessions saved by older
+  /// versions have no token, so those count as logged out.
   static Future<Map<String, dynamic>?> load() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt(_keyUserId);

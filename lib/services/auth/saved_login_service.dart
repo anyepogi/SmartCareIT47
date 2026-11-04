@@ -1,17 +1,15 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// Keeps the email and password from a "Remember me" sign-in so the
-/// sign-in form can be filled in automatically next time.
+/// Saves the email and password for "Remember me" so the sign in form
+/// is filled in next time.
 class SavedLoginService {
   SavedLoginService._();
 
   static const _keyEmail = 'saved_login_email';
   static const _keyPassword = 'saved_login_password';
 
-  /* The password is stored with FlutterSecureStorage instead of
-  SharedPreferences. SharedPreferences is a plain text file, while secure
-  storage is encrypted by the phone itself (Keystore on Android, Keychain
-  on iOS), so the password can't simply be read off the device. */
+  // Secure storage instead of SharedPreferences so the password is
+  // encrypted (Keystore on Android, Keychain on iOS), not plain text.
   static const _storage = FlutterSecureStorage();
 
   static Future<void> save({
@@ -22,7 +20,7 @@ class SavedLoginService {
     await _storage.write(key: _keyPassword, value: password);
   }
 
-  /// Returns the saved email and password, or null if nothing is saved.
+  /// The saved email and password, or null if nothing is saved.
   static Future<({String email, String password})?> load() async {
     try {
       final email = await _storage.read(key: _keyEmail);
@@ -32,8 +30,8 @@ class SavedLoginService {
       }
       return (email: email, password: password);
     } catch (_) {
-      // The encrypted data can become unreadable (e.g. after restoring a
-      // backup to a new phone). Start fresh instead of crashing.
+      // Can't be decrypted anymore (e.g. a backup restored on a new phone),
+      // so just clear it.
       await clear();
       return null;
     }

@@ -5,11 +5,8 @@ import '../api_config.dart';
 class NotificationService {
   NotificationService._();
 
-  /* This saves a new notification for a specific user in the database.
-  It does not push anything to the user's phone right away, it only
-  creates a row that will show up in their in app Notifications list
-  and, if their app happens to check for new notifications while it is
-  open, a small system notification popup too. */
+  /// Saves a notification for a user. It shows in their Notifications list,
+  /// and as a phone notification the next time their app syncs.
   static Future<void> create({
     required int userId,
     required String title,
@@ -36,10 +33,7 @@ class NotificationService {
     }
   }
 
-  /* This tells the backend that the user has opened and seen a specific
-  notification, so it changes that notification's is_read value to
-  true. This is what makes the red unread count badge go down when a
-  notification is tapped. */
+  /// Marks a notification as read, which lowers the unread badge.
   static Future<void> markRead(int notificationId) async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/notifications/mark_read.php',

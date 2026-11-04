@@ -8,16 +8,14 @@ typedef ChatbotMessage = ({bool isUser, String message, DateTime? createdAt});
 class ChatbotService {
   ChatbotService._();
 
-  /* This sends what the user typed to the backend. The backend saves it,
-  finds the matching reply from the chatbot_rule table, saves that too,
-  and sends the reply back. */
+  /// Sends the user's message and returns the bot's reply. The backend
+  /// picks the reply from chatbot_rule and saves both messages.
   static Future<ChatbotMessage> sendMessage(String message) async {
     final body = await _post('send_message.php', {'message': message});
     return _parse(body['reply'] as Map<String, dynamic>);
   }
 
-  /* This loads the user's saved conversation, oldest first, so the chat
-  looks the same after leaving the tab or reopening the app. */
+  /// The user's saved chat, oldest first.
   static Future<List<ChatbotMessage>> getHistory() async {
     final body = await _post('get_history.php', const {});
     return (body['messages'] as List)

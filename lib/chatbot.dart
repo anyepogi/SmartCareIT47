@@ -200,7 +200,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   static const String _fallbackReply =
       "I'm not sure I understood that. You can ask me about booking, "
-      "rescheduling, clinic hours, payment, or tap one of the suggestions "
+      "rescheduling, clinic hours, or tap one of the suggestions "
       "below. If I can't answer your question, please go to Menu > Contact "
       "and tell us your concern.";
 

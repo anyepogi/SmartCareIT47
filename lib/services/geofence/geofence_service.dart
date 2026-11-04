@@ -51,9 +51,8 @@ class DoctorAccount {
 class GeofenceService {
   GeofenceService._();
 
-  /// Returns the clinic's doctor account. SmartCare runs a single clinic
-  /// with one doctor, so this is who the secretary's Geofencing screen
-  /// operates tracking on behalf of.
+  /// The doctor's account. There's only one doctor, so this is who the
+  /// secretary's Geofencing screen tracks for.
   static Future<DoctorAccount> getDoctorAccount() async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/ai_geofence/get_doctor_account.php',
@@ -72,11 +71,8 @@ class GeofenceService {
     );
   }
 
-  /* This asks the backend if the doctor has turned on the "Available"
-  switch, and if the geofence has detected them physically inside a
-  clinic right now. It gives back two things together: the switch state
-  (true or false), and the name of the clinic location if they are
-  currently detected inside one, or null if they are not inside any. */
+  /// The doctor's Available switch, and the clinic they're inside right
+  /// now (null if none).
   static Future<(bool, String?)> getMyAvailability(int userId) async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/ai_geofence/get_availability.php',
@@ -95,11 +91,9 @@ class GeofenceService {
     return (body['is_available'] as bool, body['current_location'] as String?);
   }
 
-  /* This turns the doctor's "Available" switch on or off. Patients and
-  the secretary use this switch to know if the doctor is open for
-  consultations. Turning it off also clears any clinic the doctor was
-  marked as being inside of, so patients never see a doctor marked as
-  "in clinic" while the doctor has switched themselves off. */
+  /// Turns the doctor's Available switch on or off. Turning it off also
+  /// clears the clinic they're marked inside, so patients don't see
+  /// "In Clinic" for an unavailable doctor.
   static Future<void> toggleAvailability({
     required int userId,
     required bool isAvailable,
@@ -110,13 +104,9 @@ class GeofenceService {
     });
   }
 
-  /* This tells the backend that GPS tracking just started or stopped,
-  and optionally sends the current distance (in meters) from the doctor
-  to each clinic. This matters because the doctor and the secretary use
-  separate phones. If the doctor starts tracking on his own phone, the
-  secretary's phone would not know about it unless it asks the backend.
-  So whichever phone is actually running the GPS calls this function,
-  and the other phone can check the backend to see the same status. */
+  /// Tells the backend that tracking started or stopped, with optional
+  /// distances to each clinic. The doctor and secretary use different
+  /// phones, so this is how the other phone knows tracking is on.
   static Future<void> setTrackingStatus({
     required int userId,
     required bool isTracking,
@@ -133,12 +123,8 @@ class GeofenceService {
     await setTrackingStatus(userId: userId, isTracking: false);
   }
 
-  /* This asks the backend if GPS tracking is currently active for the
-  doctor, and the last known distance to each clinic, no matter which
-  phone (doctor's or secretary's) is actually doing the tracking. The
-  Geofencing screens call this every few seconds so both phones agree
-  on what is happening even though only one of them has the real GPS
-  signal running. */
+  /// Whether tracking is on (from either phone) and the last distance to
+  /// each clinic. The Geofencing screens poll this.
   static Future<(bool, Map<String, double?>)> getTrackingStatus(
     int userId,
   ) async {
@@ -164,12 +150,9 @@ class GeofenceService {
     return (body['is_tracking'] as bool, distances);
   }
 
-  /* This tells the backend that the doctor just walked into (or out of)
-  the 200 meter circle around a clinic. isInside true means they just
-  arrived, false means they just left. The backend only sends a "doctor
-  has arrived" notification to patients the first time they enter a
-  clinic each day, so patients do not get spammed with notifications if
-  the doctor walks in and out many times. */
+  /// Reports the doctor entering (isInside true) or leaving a clinic's
+  /// 200 m radius. Patients are only notified on the first arrival of
+  /// the day.
   static Future<void> updateLocationStatus({
     required int userId,
     required String location,
@@ -182,10 +165,8 @@ class GeofenceService {
     });
   }
 
-  /* This sends the doctor's current GPS position to the backend. The
-  tracking phone calls this every 2 minutes, and the backend uses it to
-  work out which clinic the doctor is heading to and refresh the ETA
-  patients see on the Doctor Availability card. */
+  /// Sends the doctor's GPS position so the backend can update the ETA
+  /// patients see. Called every 2 minutes while tracking.
   static Future<void> updatePosition({
     required int userId,
     required double latitude,
@@ -198,10 +179,8 @@ class GeofenceService {
     });
   }
 
-  /* This saves the clinic the doctor picked on the Doctor Travel card
-  (or clears it when destination is null). The backend then uses this
-  clinic for the "On the way" ETA patients see, instead of guessing from
-  today's clinic schedule. */
+  /// Saves the clinic picked on the Doctor Travel card, or clears it when
+  /// destination is null. The patients' ETA uses this clinic.
   static Future<void> setTravelDestination({
     required int userId,
     required String? destination,
@@ -212,8 +191,8 @@ class GeofenceService {
     });
   }
 
-  /// Returns the clinic the doctor last picked on the Doctor Travel card,
-  /// or null if none, so the card survives an app restart.
+  /// The clinic picked on the Doctor Travel card, or null. Used to bring
+  /// the card back after the app restarts.
   static Future<String?> getMyTravelDestination(int userId) async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/ai_geofence/get_availability.php',
@@ -232,15 +211,10 @@ class GeofenceService {
     return body['travel_destination'] as String?;
   }
 
-  /* Same as updatePosition, but also gives back the ETA the backend
-  computed, so the doctor's Doctor Travel card shows exactly the same ETA
-  patients see. Both values are null when the backend has no ETA (for
-  example the doctor is unavailable or already inside the clinic).
-  arrivedAt is the clinic name when this position was inside the clinic
-  the doctor was heading to; the backend has then already marked him as
-  arrived, cleared his destination, and notified today's patients.
-  currentLocation is the clinic the backend has the doctor marked inside
-  after this report, or null once he has left it. */
+  /// Same as updatePosition, but also returns what the backend worked out:
+  /// - etaMinutes / distanceMeters: the ETA patients see, null if none
+  /// - arrivedAt: the clinic name if this position counts as arrived
+  /// - currentLocation: the clinic the doctor is inside now, or null
   static Future<
     ({
       int? etaMinutes,
@@ -303,7 +277,7 @@ class GeofenceService {
     );
   }
 
-  /// Returns each clinic's persisted target latitude/longitude.
+  /// Saved target lat/lng of each clinic.
   static Future<Map<String, (double, double)>> getClinicCoordinates() async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/ai_geofence/get_clinic_coordinates.php',
@@ -325,7 +299,7 @@ class GeofenceService {
     };
   }
 
-  /// Persists a clinic's target latitude/longitude.
+  /// Saves a clinic's target lat/lng.
   static Future<void> updateClinicCoordinates({
     required String location,
     required double latitude,

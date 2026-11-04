@@ -5,10 +5,8 @@ import '../api_config.dart';
 class QueueService {
   QueueService._();
 
-  /* This gets the list of patients in the queue for a day, sorted by
-  time slot. It includes appointments that are booked, sent to the
-  doctor, currently being served, or already completed. You can filter
-  by clinic location, and if you do not give a date it just uses today. */
+  /// The queue for a day: booked, sent to doctor, serving, and completed.
+  /// location is optional; date defaults to today.
   static Future<List<Map<String, dynamic>>> getTodayQueue({
     String? location,
     String? date,
@@ -30,41 +28,27 @@ class QueueService {
     return List<Map<String, dynamic>>.from(body['queue'] as List);
   }
 
-  /* This is the first step of the queue workflow. The secretary uses
-  this to move a patient's appointment from "booked" to "sent to
-  doctor", meaning the patient checked in and is now waiting for the
-  doctor to see them. */
+  /// Step 1 (secretary): the patient checked in, booked -> sent_to_doctor.
   static Future<void> sendToDoctor(int appointmentId) async {
     await _post('send_to_doctor.php', {'appointment_id': appointmentId});
   }
 
-  /* This is the second step of the queue workflow. The doctor uses this
-  to confirm they are now seeing the patient, which changes the status
-  from "sent to doctor" to "serving". */
+  /// Step 2 (doctor): the doctor is now seeing the patient -> serving.
   static Future<void> confirmReceived(int appointmentId) async {
     await _post('confirm_received.php', {'appointment_id': appointmentId});
   }
 
-  /* This is used when a patient in the queue never showed up. It moves
-  the appointment to "no show", taking it out of the waiting line but
-  keeping it in the records. Only works while the patient is still
-  waiting or was just called in, not once they are with the doctor. */
+  /// Marks a patient who didn't show up as no_show. Only while they're
+  /// still waiting or just called in, not once they're with the doctor.
   static Future<void> markNoShow(int appointmentId) async {
     await _post('mark_no_show.php', {'appointment_id': appointmentId});
   }
 
-  /* This is the last step of the queue workflow. The doctor uses this
-  to mark the consultation as finished. If the doctor also wants the
-  patient to come back for a follow up visit, they can pass a follow up
-  date and clinic (the clinic can be different from where this visit
-  happened, same as a normal booking). When a follow up is given, this
-  does not just write a note, it actually creates a real new appointment
-  for that follow up date, with the next queue number there (returned as
-  followUpQueueCode, like SO4), so it shows up everywhere normal
-  appointments do. If marking complete works but the follow up booking
-  itself fails (for example the clinic is closed that day), this still
-  finishes the visit and returns a warning message instead of throwing
-  an error, so the doctor knows to book the follow up by hand. */
+  /// Last step (doctor): marks the visit completed. If a follow-up date and
+  /// clinic are given, a real appointment is booked for it and its queue
+  /// number comes back as followUpQueueCode. If that booking fails, the
+  /// visit is still completed and warning says why, so the doctor can book
+  /// the follow-up by hand.
   static Future<({String? warning, String? followUpQueueCode})>
   completeAppointment(
     int appointmentId, {

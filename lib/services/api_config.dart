@@ -6,18 +6,13 @@ import 'package:http/http.dart' as http;
 class ApiConfig {
   ApiConfig._();
 
-  /// The backend address picked at build time. Empty for a normal
-  /// `flutter run`, which then talks to the local XAMPP server. A release
-  /// build for real users points at Hostinger instead:
+  /// Set only for release builds:
   ///   flutter build apk --dart-define=API_BASE_URL=https://smartcare-ccs.com
+  /// Empty on a normal `flutter run`, so the app uses local XAMPP.
   static const String _buildBaseUrl = String.fromEnvironment('API_BASE_URL');
 
-  /* This tells the app what web address to use when it talks to the PHP
-  backend. If the build was given API_BASE_URL (see above), every
-  platform uses that, which is how a release build reaches Hostinger
-  without editing this file. Otherwise it uses the local XAMPP server:
-  the Android emulator can't reach the computer as "localhost", so it
-  uses 10.0.2.2, which is the emulator's address for the computer. */
+  /// Backend URL. Uses API_BASE_URL if it was set, otherwise local XAMPP.
+  /// The Android emulator reaches the PC through 10.0.2.2, not localhost.
   static String get baseUrl {
     if (_buildBaseUrl.isNotEmpty) return _buildBaseUrl;
     if (kIsWeb) return 'http://localhost/smartcare.1';
@@ -25,21 +20,17 @@ class ApiConfig {
     return 'http://localhost/smartcare.1';
   }
 
-  /// The login token the backend gave at sign in. Sent as the
-  /// X-Auth-Token header on every request so the backend knows who is
-  /// calling. Set and cleared by SmartCareSession.
+  /// Login token from sign in, sent as X-Auth-Token on every request.
+  /// Set and cleared by SmartCareSession.
   static String? authToken;
 
-  /// Called when the backend rejects the saved token (expired, signed out
-  /// elsewhere, or password changed), so the app can send the user back
-  /// to the sign in screen. Set in main.dart.
+  /// Runs when the backend rejects the token (expired, logged out, or
+  /// password changed). Set in main.dart to go back to sign in.
   static void Function()? onUnauthorized;
 
-  /* Every service uses this instead of http.post directly. It always
-  sends JSON and the current login token, and if the backend answers
-  401 for a request that carried a token, it reports the session as
-  expired. Requests without a token (like signing in with a wrong
-  password, which is also a 401) are left alone. */
+  /// POST with a JSON body and the login token. A 401 on a request that had
+  /// a token means the session expired. A 401 without a token (like a wrong
+  /// password on sign in) is left for the caller to handle.
   static Future<http.Response> post(
     Uri url, {
     Map<String, String>? headers,
