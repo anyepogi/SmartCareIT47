@@ -7,9 +7,9 @@ import '../services/appointment/appointment_service.dart';
 import '../services/navigation_transitions.dart';
 import '../services/notifications/appointment_reminder_service.dart';
 import '../services/profile/profile_service.dart';
-import '../services/schedule/schedule_service.dart';
 import '../state/app_session.dart';
 import '../widgets/loading_button.dart';
+import '../widgets/session_info_card.dart';
 import '../widgets/smartcare_bottom_nav.dart';
 import '../widgets/smartcare_dashboard_header.dart';
 import 'confirm.dart';
@@ -63,46 +63,16 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
   final List<String> locations = clinicLocations;
   String? selectedLocation = "Sta. Rita";
 
-  List<String> get slots => timeSlotsForLocation(selectedLocation ?? '');
-
   late final DateTime _today;
   late DateTime selectedDate;
-  String? selectedSlot;
   bool _isBooking = false;
   OverlayEntry? _bookingOverlayEntry;
-
-  Set<String> unavailableSlots = {};
-  bool _isLoadingSlots = false;
-
-  /// Merges server-reported unavailable slots with slots whose time has
-  /// already passed today, so patients can't book a time that's already
-  /// gone by when they're viewing today's schedule.
-  Set<String> get _effectiveUnavailableSlots {
-    if (!_isSameDate(selectedDate, DateTime.now())) return unavailableSlots;
-
-    final now = DateTime.now();
-    final pastSlots = slots.where((slot) {
-      final start = _parseSlotStartTime(slot);
-      if (start == null) return false;
-      final slotTime = DateTime(
-        selectedDate.year,
-        selectedDate.month,
-        selectedDate.day,
-        start.$1,
-        start.$2,
-      );
-      return !slotTime.isAfter(now);
-    });
-
-    return {...unavailableSlots, ...pastSlots};
-  }
 
   @override
   void initState() {
     super.initState();
     _today = _dateOnly(widget.initialDate ?? DateTime.now());
     selectedDate = _firstValidDateFor(selectedLocation, _today);
-    _loadBlockedSlots();
     _checkExistingAppointment();
   }
 
@@ -143,7 +113,8 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
       if (!mounted || appt == null) return;
 
       final date = DateTime.parse(appt['schedule_date'] as String);
-      final dateTime = "${_formatScheduleDate(date)} at ${appt['time_slot']}";
+      final dateTime =
+          "${_formatScheduleDate(date)}, ${appointmentTimeLabel(appt)}";
       final patientName = await _currentPatientName();
       if (!mounted) return;
 
@@ -155,6 +126,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
             patientName: patientName,
             appointmentId: appt['reference_no'] as String? ?? '',
             location: appt['location'] as String,
+            queueCode: appt['queue_code'] as String?,
             isExistingView: true,
           ),
         ),
@@ -167,62 +139,23 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
   String get _dateKey =>
       "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
 
-  Future<void> _loadBlockedSlots() async {
-    final location = selectedLocation;
-    if (location == null) return;
-
-    setState(() {
-      _isLoadingSlots = true;
-    });
-    try {
-      final blocked = await ScheduleService.getBlockedSlots(
-        location: location,
-        date: _dateKey,
-      );
-      if (!mounted) return;
-      setState(() {
-        unavailableSlots = blocked.toSet();
-        if (_effectiveUnavailableSlots.contains(selectedSlot)) {
-          selectedSlot = null;
-        }
-        _isLoadingSlots = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingSlots = false;
-      });
-    }
-  }
-
   List<_DayOption> get _visibleDays =>
       _buildVisibleWeekDays(_today, selectedLocation);
 
+  /* Books the chosen clinic and date. There is no time slot to pick: the
+  backend gives the patient the next queue number for that session (like
+  SO3 if two people booked Sta. Rita that day before them). */
   Future<void> _confirmBooking() async {
     if (_isBooking) {
       return;
     }
 
-    final bookedSlot = selectedSlot;
     final bookedLocation = selectedLocation;
-    if (bookedLocation == null || bookedSlot == null) {
+    if (bookedLocation == null ||
+        !_visibleDays.any((day) => _isSameDate(day.date, selectedDate))) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please select a location, date, and time slot."),
-        ),
+        const SnackBar(content: Text("Please select a location and date.")),
       );
-      return;
-    }
-
-    if (_effectiveUnavailableSlots.contains(bookedSlot)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "That time slot has already passed. Please pick another.",
-          ),
-        ),
-      );
-      _loadBlockedSlots();
       return;
     }
 
@@ -237,7 +170,6 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
         userId: SmartCareSession.currentUserId ?? 0,
         location: bookedLocation,
         date: _dateKey,
-        timeSlot: bookedSlot,
       );
     } catch (e) {
       _hideBookingOverlay();
@@ -248,15 +180,14 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
-      _loadBlockedSlots();
       return;
     }
 
     AppointmentReminderService.scheduleForAppointment({
       'appointment_id': booking.appointmentId,
       'schedule_date': _dateKey,
-      'time_slot': bookedSlot,
       'location': bookedLocation,
+      'queue_code': booking.queueCode,
     });
 
     if (!mounted) {
@@ -269,8 +200,8 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
       _isBooking = false;
     });
 
-    final appointmentDateTime = _formatScheduleDate(selectedDate);
-    final fullDateTime = "$appointmentDateTime at $bookedSlot";
+    final fullDateTime =
+        "${_formatScheduleDate(selectedDate)}, ${sessionTimeLabel(bookedLocation) ?? ''}";
     final patientName = await _currentPatientName();
     if (!mounted) return;
 
@@ -282,122 +213,9 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
           patientName: patientName,
           appointmentId: booking.code,
           location: bookedLocation,
+          queueCode: booking.queueCode,
         ),
       ),
-    );
-  }
-
-  String _suggestAlternativeSlot(String requestedSlot) {
-    final requestedIndex = slots.indexOf(requestedSlot);
-    final laterSlots = requestedIndex == -1
-        ? slots
-        : slots.skip(requestedIndex + 1);
-
-    return laterSlots.firstWhere(
-      (slot) => !unavailableSlots.contains(slot),
-      orElse: () => slots.firstWhere(
-        (slot) => !unavailableSlots.contains(slot),
-        orElse: () => slots.first,
-      ),
-    );
-  }
-
-  void _showConfirmAppointmentDialog(String bookedSlot) {
-    final appointmentLabel = _appointmentLabel(bookedSlot);
-
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text("Confirm Appointment"),
-          content: Text(
-            "AI scheduling found an available schedule for $appointmentLabel. Confirm this appointment?",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-              },
-              child: const Text("Change"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                _saveAppointment(bookedSlot);
-              },
-              child: const Text("Confirm"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showAlternativeScheduleDialog(
-    String requestedSlot,
-    String suggestedSlot,
-  ) {
-    final appointmentDate = _formatScheduleDate(selectedDate);
-
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text("Alternative Schedule"),
-          content: Text(
-            "$requestedSlot on $appointmentDate is not available. AI scheduling suggests $suggestedSlot instead.",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-              },
-              child: const Text("Change"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                setState(() {
-                  selectedSlot = suggestedSlot;
-                });
-                _saveAppointment(suggestedSlot);
-              },
-              child: const Text("Use Suggested"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _saveAppointment(String bookedSlot) {
-    final appointmentLabel = _appointmentLabel(bookedSlot);
-
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text("Appointment Saved"),
-          content: Text(
-            "Your appointment for $appointmentLabel has been saved. You will be notified about updates.",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                smartCareGoTo(context, '/queue');
-              },
-              child: const Text("View Status"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showChangeMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Appointment type change tapped.")),
     );
   }
 
@@ -410,7 +228,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
       builder: (context) {
         return Positioned.fill(
           child: Material(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -440,16 +258,12 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
       },
     );
 
-    Overlay.of(context)?.insert(_bookingOverlayEntry!);
+    Overlay.of(context).insert(_bookingOverlayEntry!);
   }
 
   void _hideBookingOverlay() {
     _bookingOverlayEntry?.remove();
     _bookingOverlayEntry = null;
-  }
-
-  String _appointmentLabel(String slot) {
-    return "${_formatScheduleDate(selectedDate)} at $slot";
   }
 
   @override
@@ -487,7 +301,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
                     const SmartCareDashboardHeader(
                       title: "Book Appointment",
                       subtitle:
-                          "Easily schedule appointments by selecting a date and time slot.",
+                          "Choose a clinic and date to get your queue number.",
                     ),
                     Padding(
                       padding: EdgeInsets.fromLTRB(padding, 14, padding, 22),
@@ -511,9 +325,7 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
                                           ? _today
                                           : selectedDate,
                                     );
-                                    selectedSlot = null;
                                   });
-                                  _loadBlockedSlots();
                                 },
                               ),
                               SizedBox(height: blockGap),
@@ -526,29 +338,14 @@ class _AppointmentBookingScreenState extends State<AppointmentBookingScreen> {
                                   setState(() {
                                     selectedDate = day.date;
                                   });
-                                  _loadBlockedSlots();
                                 },
                               ),
                               SizedBox(height: blockGap),
-                              SizedBox(height: blockGap),
-                              const _SectionLabel("Select Time Slot"),
+                              const _SectionLabel("Clinic Session"),
                               SizedBox(height: sectionGap),
-                              if (_isLoadingSlots)
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 12),
-                                  child: LinearProgressIndicator(
-                                    color: Color(0xFF006B2D),
-                                  ),
-                                ),
-                              _TimeSlotGrid(
-                                slots: slots,
-                                selectedSlot: selectedSlot,
-                                unavailableSlots: _effectiveUnavailableSlots,
-                                onSelected: (slot) {
-                                  setState(() {
-                                    selectedSlot = slot;
-                                  });
-                                },
+                              SessionInfoCard(
+                                location: selectedLocation ?? '',
+                                date: selectedDate,
                               ),
                               SizedBox(height: blockGap),
                               SizedBox(
@@ -861,135 +658,6 @@ class _DayCard extends StatelessWidget {
   }
 }
 
-class _TimeSlotGrid extends StatelessWidget {
-  const _TimeSlotGrid({
-    required this.slots,
-    required this.selectedSlot,
-    required this.onSelected,
-    this.unavailableSlots = const {},
-  });
-
-  final List<String> slots;
-  final String? selectedSlot;
-  final ValueChanged<String> onSelected;
-  final Set<String> unavailableSlots;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 360
-            ? 3
-            : constraints.maxWidth >= 250
-            ? 2
-            : 1;
-        final spacing = columns == 3 ? 10.0 : 12.0;
-        final itemWidth =
-            (constraints.maxWidth - (spacing * (columns - 1))) / columns;
-
-        return Wrap(
-          spacing: spacing,
-          runSpacing: 12,
-          children: slots.map((slot) {
-            final isUnavailable = unavailableSlots.contains(slot);
-            return SizedBox(
-              width: itemWidth,
-              height: 48,
-              child: _TimeSlotButton(
-                label: slot,
-                isSelected: selectedSlot == slot,
-                isUnavailable: isUnavailable,
-                onTap: isUnavailable ? null : () => onSelected(slot),
-              ),
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-}
-
-class _TimeSlotButton extends StatelessWidget {
-  const _TimeSlotButton({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.isUnavailable = false,
-  });
-
-  final String label;
-  final bool isSelected;
-  final bool isUnavailable;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      enabled: !isUnavailable,
-      child: Material(
-        color: isUnavailable
-            ? const Color(0xFFF0F0F0)
-            : (isSelected ? const Color(0xFF006B2D) : Colors.white),
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isUnavailable
-                    ? const Color(0xFFD0D0D0)
-                    : isSelected
-                    ? const Color(0xFF006B2D)
-                    : const Color(0xFF62B36E),
-                width: isSelected ? 0 : 1,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: Text(
-                    isUnavailable ? "$label (Full)" : label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: isUnavailable
-                          ? const Color(0xFF9E9E9E)
-                          : (isSelected
-                                ? Colors.white
-                                : const Color(0xFF006B2D)),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                if (isSelected) ...[
-                  const SizedBox(width: 8),
-                  const CircleAvatar(
-                    radius: 10,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.check,
-                      color: Color(0xFF006B2D),
-                      size: 14,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _AppointmentDetailsCard extends StatelessWidget {
   const _AppointmentDetailsCard({required this.onChange});
 
@@ -1099,14 +767,16 @@ DateTime _dateOnly(DateTime date) {
 }
 
 /// Patients can view a rolling 1-month window starting today, filtered to
-/// only the [location]'s active clinic weekdays.
+/// only the [location]'s active clinic weekdays. Today is left out once its
+/// session has ended, since it can no longer be booked.
 List<_DayOption> _buildVisibleWeekDays(DateTime today, String? location) {
   if (location == null) return [];
   final oneMonthOut = DateTime(today.year, today.month + 1, today.day);
   final days = <_DayOption>[];
   var day = today;
   while (!day.isAfter(oneMonthOut)) {
-    if (isDateValidForLocation(location, day)) {
+    if (isDateValidForLocation(location, day) &&
+        !(_isSameDate(day, DateTime.now()) && isSessionOver(location, day))) {
       days.add(_DayOption(day));
     }
     day = day.add(const Duration(days: 1));
@@ -1118,22 +788,6 @@ bool _isSameDate(DateTime first, DateTime second) {
   return first.year == second.year &&
       first.month == second.month &&
       first.day == second.day;
-}
-
-/// Parses a slot start time like "9:00am - 9:30am" into (hour, minute).
-(int, int)? _parseSlotStartTime(String timeSlot) {
-  final start = timeSlot.split('-').first.trim().toLowerCase();
-  final match = RegExp(r'^(\d{1,2}):(\d{2})(am|pm)$').firstMatch(start);
-  if (match == null) return null;
-
-  var hour = int.parse(match.group(1)!);
-  final minute = int.parse(match.group(2)!);
-  final meridiem = match.group(3)!;
-
-  if (meridiem == 'pm' && hour != 12) hour += 12;
-  if (meridiem == 'am' && hour == 12) hour = 0;
-
-  return (hour, minute);
 }
 
 String _formatScheduleDate(DateTime date) {

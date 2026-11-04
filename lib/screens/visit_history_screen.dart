@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
 
+import '../data/location_schedule.dart';
 import '../services/appointment/appointment_service.dart';
 import '../state/app_session.dart';
 import '../widgets/smartcare_bottom_nav.dart';
 import '../widgets/smartcare_dashboard_header.dart';
 
 const List<String> _monthNames = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
-String _formatVisitDate(String isoDate, String timeSlot) {
+String _formatVisitDate(String isoDate, String queueLabel) {
   final date = DateTime.tryParse(isoDate);
-  if (date == null) return "$isoDate - $timeSlot";
-  return "${_monthNames[date.month - 1]} ${date.day}, ${date.year} - $timeSlot";
+  if (date == null) return "$isoDate - $queueLabel";
+  return "${_monthNames[date.month - 1]} ${date.day}, ${date.year} - $queueLabel";
 }
 
 String _initialsFor(String name) {
@@ -116,7 +127,8 @@ class _StaffVisitHistoryState extends State<_StaffVisitHistory> {
         _SummaryCard(
           icon: Icons.groups,
           value: _visits.length.toString(),
-          label: 'Patient visits across $clinicCount clinic branch'
+          label:
+              'Patient visits across $clinicCount clinic branch'
               '${clinicCount == 1 ? '' : 'es'}',
         ),
         const SizedBox(height: 14),
@@ -142,7 +154,7 @@ class _StaffVisitHistoryState extends State<_StaffVisitHistory> {
               subtitle: visit['location'] as String,
               date: _formatVisitDate(
                 visit['schedule_date'] as String,
-                visit['time_slot'] as String,
+                "Queue No. ${appointmentQueueLabel(visit)}",
               ),
               status: 'Completed',
             ),
@@ -176,9 +188,7 @@ class _PatientVisitHistoryState extends State<_PatientVisitHistory> {
       return;
     }
     try {
-      final visits = await AppointmentService.getVisitHistory(
-        userId: userId,
-      );
+      final visits = await AppointmentService.getVisitHistory(userId: userId);
       if (!mounted) return;
       setState(() {
         _visits = visits;
@@ -219,7 +229,7 @@ class _PatientVisitHistoryState extends State<_PatientVisitHistory> {
               subtitle: visit['reference_no'] as String? ?? '',
               date: _formatVisitDate(
                 visit['schedule_date'] as String,
-                visit['time_slot'] as String,
+                "Queue No. ${appointmentQueueLabel(visit)}",
               ),
               status: 'Completed',
               useClinicIcon: true,

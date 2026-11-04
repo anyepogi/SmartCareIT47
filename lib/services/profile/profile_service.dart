@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 
 class ProfileService {
@@ -13,9 +11,8 @@ class ProfileService {
   static Future<Map<String, dynamic>> getProfile(int userId) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/profile/get_profile.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 
@@ -50,9 +47,8 @@ class ProfileService {
       '${ApiConfig.baseUrl}/api/profile/update_profile.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'user_id': userId,
         'first_name': firstName,

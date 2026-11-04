@@ -10,6 +10,7 @@ class SessionService {
   static const _keyFirstName = 'session_first_name';
   static const _keyLastName = 'session_last_name';
   static const _keyRole = 'session_role';
+  static const _keyToken = 'session_token';
 
   /* This saves the logged in user's info on the phone itself, using
   SharedPreferences (a simple storage built into the phone, like a small
@@ -21,6 +22,7 @@ class SessionService {
     required String firstName,
     required String lastName,
     required String role,
+    required String token,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_keyUserId, userId);
@@ -28,17 +30,22 @@ class SessionService {
     await prefs.setString(_keyFirstName, firstName);
     await prefs.setString(_keyLastName, lastName);
     await prefs.setString(_keyRole, role);
+    await prefs.setString(_keyToken, token);
   }
 
   /// Returns the saved session, or null if the user is not logged in.
+  /// A session saved by an older app version has no login token, so it
+  /// is treated as logged out and the user signs in again.
   static Future<Map<String, dynamic>?> load() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt(_keyUserId);
-    if (userId == null) {
+    final token = prefs.getString(_keyToken);
+    if (userId == null || token == null || token.isEmpty) {
       return null;
     }
 
     return {
+      'token': token,
       'user_id': userId,
       'email': prefs.getString(_keyEmail) ?? '',
       'first_name': prefs.getString(_keyFirstName) ?? '',
@@ -54,5 +61,6 @@ class SessionService {
     await prefs.remove(_keyFirstName);
     await prefs.remove(_keyLastName);
     await prefs.remove(_keyRole);
+    await prefs.remove(_keyToken);
   }
 }

@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 
 class AuditLogEntry {
@@ -44,11 +42,23 @@ class AuditLogEntry {
 
 /// The fixed set of resource types the app ever logs — matches exactly
 /// what the backend passes to log_audit() across every endpoint.
-const List<String> auditResourceTypes = ['Appointment', 'User', 'Geofence', 'Auth', 'Contact'];
+const List<String> auditResourceTypes = [
+  'Appointment',
+  'User',
+  'Geofence',
+  'Auth',
+  'Contact',
+];
 
 /// The fixed set of roles that can perform a logged action — matches
 /// exactly what audit_lookup_user() in the backend can resolve.
-const List<String> auditRoles = ['patient', 'doctor', 'secretary', 'guest', 'system'];
+const List<String> auditRoles = [
+  'patient',
+  'doctor',
+  'secretary',
+  'guest',
+  'system',
+];
 
 class AuditLogService {
   AuditLogService._();
@@ -73,9 +83,8 @@ class AuditLogService {
   }) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/audit/get_logs.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'action': action,
         'resource_type': resourceType,

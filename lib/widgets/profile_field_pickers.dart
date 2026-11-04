@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 
 const List<String> _monthNames = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 /// Parses a "yyyy-MM-dd" string (the format the backend's DATE column

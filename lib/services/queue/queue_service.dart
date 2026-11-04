@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 
 class QueueService {
@@ -19,9 +17,8 @@ class QueueService {
       '${ApiConfig.baseUrl}/api/appointment/get_today_queue.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'location': location, 'date': date}),
     );
 
@@ -48,22 +45,30 @@ class QueueService {
     await _post('confirm_received.php', {'appointment_id': appointmentId});
   }
 
+  /* This is used when a patient in the queue never showed up. It moves
+  the appointment to "no show", taking it out of the waiting line but
+  keeping it in the records. Only works while the patient is still
+  waiting or was just called in, not once they are with the doctor. */
+  static Future<void> markNoShow(int appointmentId) async {
+    await _post('mark_no_show.php', {'appointment_id': appointmentId});
+  }
+
   /* This is the last step of the queue workflow. The doctor uses this
   to mark the consultation as finished. If the doctor also wants the
   patient to come back for a follow up visit, they can pass a follow up
-  date, time slot, and clinic (the clinic can be different from where
-  this visit happened, same as a normal booking). When a follow up is
-  given, this does not just write a note, it actually creates a real
-  new appointment for that follow up date so it shows up everywhere
-  normal appointments do. If marking complete works but the follow up
-  booking itself fails (for example someone else took that slot first),
-  this still finishes the visit and returns a warning message instead of
-  throwing an error, so the doctor knows to reschedule the follow up by
-  hand. */
-  static Future<String?> completeAppointment(
+  date and clinic (the clinic can be different from where this visit
+  happened, same as a normal booking). When a follow up is given, this
+  does not just write a note, it actually creates a real new appointment
+  for that follow up date, with the next queue number there (returned as
+  followUpQueueCode, like SO4), so it shows up everywhere normal
+  appointments do. If marking complete works but the follow up booking
+  itself fails (for example the clinic is closed that day), this still
+  finishes the visit and returns a warning message instead of throwing
+  an error, so the doctor knows to book the follow up by hand. */
+  static Future<({String? warning, String? followUpQueueCode})>
+  completeAppointment(
     int appointmentId, {
     String? followUpDate,
-    String? followUpTimeSlot,
     String? followUpLocation,
     int? actorUserId,
   }) async {
@@ -71,13 +76,11 @@ class QueueService {
       '${ApiConfig.baseUrl}/api/appointment/complete_appointment.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'appointment_id': appointmentId,
         'follow_up_date': followUpDate,
-        'follow_up_time_slot': followUpTimeSlot,
         'follow_up_location': followUpLocation,
         'actor_user_id': actorUserId,
       }),
@@ -88,7 +91,10 @@ class QueueService {
       throw Exception(body['message'] ?? 'Request failed.');
     }
 
-    return body['follow_up_warning'] as String?;
+    return (
+      warning: body['follow_up_warning'] as String?,
+      followUpQueueCode: body['follow_up_queue_code'] as String?,
+    );
   }
 
   /// Returns the appointment currently being served at a location, if any.
@@ -97,9 +103,8 @@ class QueueService {
       '${ApiConfig.baseUrl}/api/appointment/get_now_serving.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'location': location}),
     );
 
@@ -114,11 +119,7 @@ class QueueService {
   static Future<void> _post(String endpoint, Map<String, dynamic> body) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/appointment/$endpoint');
 
-    final response = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
+    final response = await ApiConfig.post(uri, body: jsonEncode(body));
 
     final Map<String, dynamic> decoded = jsonDecode(response.body);
     if (response.statusCode != 200 || decoded['success'] != true) {

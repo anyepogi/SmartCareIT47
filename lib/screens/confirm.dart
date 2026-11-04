@@ -7,6 +7,7 @@ class AppointmentConfirmScreen extends StatelessWidget {
     this.patientName = "Patient",
     this.appointmentId = "APT123456",
     this.location = "Sta. Rita",
+    this.queueCode,
     this.isExistingView = false,
   });
 
@@ -14,6 +15,10 @@ class AppointmentConfirmScreen extends StatelessWidget {
   final String patientName;
   final String appointmentId;
   final String location;
+
+  /// The patient's place in line, like SO3. Null for old appointments
+  /// booked before queue numbers.
+  final String? queueCode;
 
   /// True when this screen is opened to view an appointment the patient
   /// already booked earlier, instead of right after a fresh booking.
@@ -72,7 +77,7 @@ class AppointmentConfirmScreen extends StatelessWidget {
                           Text(
                             isExistingView
                                 ? "You already have a booked appointment. Cancel it first if you'd like to book a different one."
-                                : "Your appointment is confirmed. Kindly arrive before the scheduled time and scan your QR code at the kiosk.",
+                                : "Your appointment is confirmed. Patients are served in order of their queue number, so kindly arrive before the clinic opens.",
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: Color(0xFF6E8D73),
@@ -125,12 +130,19 @@ class AppointmentConfirmScreen extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 16),
+                                if (queueCode != null) ...[
+                                  _DetailRow(
+                                    label: "Queue Number",
+                                    value: queueCode!,
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
                                 // Location
                                 _DetailRow(label: "Location", value: location),
                                 const SizedBox(height: 12),
                                 // Date & Time
                                 _DetailRow(
-                                  label: "Date & Time",
+                                  label: "Date & Session",
                                   value: dateTime,
                                 ),
                                 const SizedBox(height: 12),
@@ -142,7 +154,7 @@ class AppointmentConfirmScreen extends StatelessWidget {
                                 const SizedBox(height: 12),
                                 // Appointment ID
                                 _DetailRow(
-                                  label: "Appointment ID",
+                                  label: "Reference No.",
                                   value: appointmentId,
                                 ),
                               ],

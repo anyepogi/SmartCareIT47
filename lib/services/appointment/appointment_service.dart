@@ -1,49 +1,59 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 
 class BookingResult {
-  const BookingResult({required this.appointmentId, required this.code});
+  const BookingResult({
+    required this.appointmentId,
+    required this.code,
+    required this.queueNumber,
+    required this.queueCode,
+  });
 
   final int appointmentId;
+
+  /// The reference number, like STR2026103003.
   final String code;
+  final int queueNumber;
+
+  /// The queue number as shown to people, like SO3 or SW3.
+  final String queueCode;
+
+  factory BookingResult.fromJson(Map<String, dynamic> body) => BookingResult(
+    appointmentId: body['appointment_id'] as int,
+    code: body['appointment_code'] as String,
+    queueNumber: body['queue_number'] as int,
+    queueCode: body['queue_code'] as String,
+  );
 }
 
 class AppointmentService {
   AppointmentService._();
 
-  /* This creates a new appointment in the database. It sends the patient
-  id, clinic location, date, and time slot to the backend. The backend
-  checks if the slot is still free before saving it. If isReschedule is
-  true, it tells the backend this booking replaces an old appointment
-  that was just cancelled, so it can log it correctly. If actorUserId is
-  given, it means a staff member (doctor or secretary) is booking this
-  for the patient, not the patient booking it themselves. If the booking
-  works, it returns the new appointment id and its reference code. If it
-  fails (for example the slot got taken first), it throws an error with
-  the reason from the backend. */
+  /* This books an online appointment. There are no time slots anymore:
+  it sends the patient id, clinic location, and date, and the backend
+  gives the patient the next queue number for that clinic's session that
+  day (like SO3, the 3rd to book at Sta. Rita). To reschedule, pass
+  rescheduleAppointmentId: the backend books the new one first and only
+  then cancels the old one, so the patient never loses their appointment
+  if the new booking fails. A staff member can book for a patient by
+  passing that patient's userId. Throws with the backend's reason if the
+  booking is not allowed (for example the clinic is closed that day). */
   static Future<BookingResult> book({
     required int userId,
     required String location,
     required String date,
-    required String timeSlot,
-    bool isReschedule = false,
-    int? actorUserId,
+    int? rescheduleAppointmentId,
   }) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/appointment/book.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'user_id': userId,
         'location': location,
         'date': date,
-        'time_slot': timeSlot,
-        'is_reschedule': isReschedule,
-        'actor_user_id': actorUserId,
+        'reschedule_appointment_id': rescheduleAppointmentId,
       }),
     );
 
@@ -52,10 +62,46 @@ class AppointmentService {
       throw Exception(body['message'] ?? 'Failed to book appointment.');
     }
 
-    return BookingResult(
-      appointmentId: body['appointment_id'] as int,
-      code: body['appointment_code'] as String,
+    return BookingResult.fromJson(body);
+  }
+
+  /* This records a walk-in patient (secretary only): someone who came to
+  the clinic without booking in the app and may not have an account. The
+  walk-in gets the next queue number for that clinic and date, shared
+  with online bookings, shown like SW4. middleName and email are
+  optional; contactNumber is required. */
+  static Future<BookingResult> bookWalkIn({
+    required String lastName,
+    required String firstName,
+    String? middleName,
+    required String contactNumber,
+    String? email,
+    required String location,
+    required String date,
+  }) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/appointment/book_walkin.php',
     );
+
+    final response = await ApiConfig.post(
+      uri,
+      body: jsonEncode({
+        'last_name': lastName,
+        'first_name': firstName,
+        'middle_name': middleName ?? '',
+        'contact_number': contactNumber,
+        'email': email ?? '',
+        'location': location,
+        'date': date,
+      }),
+    );
+
+    final Map<String, dynamic> body = jsonDecode(response.body);
+    if (response.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to record the walk-in.');
+    }
+
+    return BookingResult.fromJson(body);
   }
 
   /// Returns the patient's nearest upcoming booked appointment, or null if
@@ -65,9 +111,8 @@ class AppointmentService {
       '${ApiConfig.baseUrl}/api/appointment/get_upcoming.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 
@@ -89,9 +134,8 @@ class AppointmentService {
       '${ApiConfig.baseUrl}/api/appointment/get_visit_history.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 
@@ -110,7 +154,7 @@ class AppointmentService {
       '${ApiConfig.baseUrl}/api/appointment/get_all_appointments.php',
     );
 
-    final response = await http.post(uri);
+    final response = await ApiConfig.post(uri);
 
     final Map<String, dynamic> body = jsonDecode(response.body);
     if (response.statusCode != 200 || body['success'] != true) {
@@ -127,9 +171,8 @@ class AppointmentService {
       '${ApiConfig.baseUrl}/api/appointment/get_all_upcoming.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 
@@ -148,9 +191,8 @@ class AppointmentService {
       '${ApiConfig.baseUrl}/api/appointment/get_booking_pattern.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 
@@ -175,9 +217,8 @@ class AppointmentService {
       '${ApiConfig.baseUrl}/api/appointment/update_status.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'appointment_id': appointmentId,
         'status': status,
@@ -204,9 +245,8 @@ class AppointmentService {
   }) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/appointment/cancel.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'appointment_id': appointmentId,
         'actor_user_id': actorUserId,

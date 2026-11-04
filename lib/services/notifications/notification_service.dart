@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 
 class NotificationService {
@@ -21,9 +19,8 @@ class NotificationService {
   }) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/notifications/create.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'user_id': userId,
         'title': title,
@@ -48,9 +45,8 @@ class NotificationService {
       '${ApiConfig.baseUrl}/api/notifications/mark_read.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'notification_id': notificationId}),
     );
 
@@ -63,9 +59,8 @@ class NotificationService {
   static Future<List<Map<String, dynamic>>> getForUser(int userId) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/notifications/get.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 

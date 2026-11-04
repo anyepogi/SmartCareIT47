@@ -2,11 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../data/location_schedule.dart';
 import '../services/appointment/appointment_service.dart';
+import '../services/notifications/notification_service.dart';
 import '../state/app_session.dart';
+import '../widgets/cancel_reason_dialog.dart';
 import '../widgets/smartcare_bottom_nav.dart';
 import '../widgets/smartcare_dashboard_header.dart';
+import '../widgets/walk_in_dialog.dart';
 
-const List<String> _filterableStatuses = ['booked', 'completed', 'cancelled'];
+const List<String> _filterableStatuses = [
+  'booked',
+  'completed',
+  'cancelled',
+  'no_show',
+];
 
 String _formatFilterDate(DateTime date) {
   final y = date.year.toString().padLeft(4, '0');
@@ -55,6 +63,12 @@ const List<String> _monthNames = [
   "December",
 ];
 
+/// Shows "—" for a contact number or email that was never filled in.
+String _orDash(Object? value) {
+  final text = (value as String? ?? '').trim();
+  return text.isEmpty ? '—' : text;
+}
+
 String _formatDate(String isoDate) {
   final date = DateTime.tryParse(isoDate);
   if (date == null) return isoDate;
@@ -82,15 +96,24 @@ Color _statusColor(String status) {
       return const Color(0xFFC8E6C9);
     case 'cancelled':
       return const Color(0xFFE8B4B8);
+    case 'no_show':
+      return const Color(0xFFD1D5DB);
     default:
       return const Color(0xFFE0E0E0);
   }
 }
 
+/// Cancelled and completed appointments are final: their status can no
+/// longer be changed (the backend refuses it too).
+bool _isFinalStatus(String status) =>
+    status == 'cancelled' || status == 'completed';
+
 String _statusLabel(String status) {
   switch (status) {
     case 'sent_to_doctor':
       return 'SENT TO DOCTOR';
+    case 'no_show':
+      return 'NO-SHOW';
     default:
       return status.toUpperCase();
   }
@@ -148,7 +171,14 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
     String status,
   ) async {
     final appointmentId = appointment['appointment_id'] as int;
-    if (appointment['status'] == status) return;
+    if (appointment['status'] == status ||
+        _isFinalStatus(appointment['status'] as String)) {
+      return;
+    }
+    if (status == 'cancelled') {
+      await _cancelAppointment(appointment);
+      return;
+    }
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -198,6 +228,68 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
     }
   }
 
+  /* Cancelling asks for a reason first, the same way as on the Now
+  Serving screen. The reason is saved in the audit log and sent to the
+  patient in a notification (walk-ins without an account are skipped).
+  If only the notification fails, the cancel still stands. */
+  Future<void> _cancelAppointment(Map<String, dynamic> appointment) async {
+    final appointmentId = appointment['appointment_id'] as int;
+    final reason = await showCancelReasonDialog(
+      context,
+      patientName: appointment['full_name'] as String,
+    );
+    if (reason == null || !mounted) return;
+
+    setState(() => _updatingAppointmentId = appointmentId);
+    try {
+      await AppointmentService.cancel(
+        appointmentId,
+        actorUserId: SmartCareSession.currentUserId,
+        reason: reason,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _updatingAppointmentId = null);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+      return;
+    }
+
+    var notified = true;
+    final patientUserId = appointment['user_id'] as int?;
+    if (patientUserId != null) {
+      try {
+        await NotificationService.create(
+          userId: patientUserId,
+          title: "Appointment Cancelled",
+          message:
+              "Your appointment (${appointment['reference_no'] ?? ''}) was "
+              "cancelled by the clinic. Reason: $reason",
+          type: "Alerts",
+          targetRoute: "/appointment",
+        );
+      } catch (_) {
+        notified = false;
+      }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      appointment['status'] = 'cancelled';
+      _updatingAppointmentId = null;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          notified
+              ? "Appointment cancelled."
+              : "Appointment cancelled, but the patient couldn't be notified.",
+        ),
+      ),
+    );
+  }
+
   List<Map<String, dynamic>> get _filteredAppointments {
     final query = _searchController.text.trim().toLowerCase();
     return _appointments.where((a) {
@@ -221,7 +313,12 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
       if (query.isNotEmpty) {
         final name = (a['full_name'] as String).toLowerCase();
         final ref = (a['reference_no'] as String? ?? '').toLowerCase();
-        if (!name.contains(query) && !ref.contains(query)) {
+        final contact = (a['contact_number'] as String? ?? '').toLowerCase();
+        final email = (a['email'] as String? ?? '').toLowerCase();
+        if (!name.contains(query) &&
+            !ref.contains(query) &&
+            !contact.contains(query) &&
+            !email.contains(query)) {
           return false;
         }
       }
@@ -303,7 +400,7 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
                 controller: _searchController,
                 style: const TextStyle(fontSize: 12),
                 decoration: _filterDecoration(
-                  hintText: 'Name or Reference #',
+                  hintText: 'Name, Reference #, Contact, or Email',
                   prefixIcon: const Icon(
                     Icons.search,
                     size: 16,
@@ -430,6 +527,21 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
     );
   }
 
+  /// Records a walk-in patient, then reloads the list so it shows up.
+  Future<void> _addWalkIn() async {
+    final booking = await showWalkInDialog(context);
+    if (booking == null || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          "Walk-in recorded. Queue number ${booking.queueCode} "
+          "(${booking.code}).",
+        ),
+      ),
+    );
+    _load();
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -461,13 +573,30 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
                       children: [
                         _buildFilterPanel(),
                         const SizedBox(height: 24),
-                        const Text(
-                          'Record List',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A3320),
-                          ),
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Record List',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1A3320),
+                                ),
+                              ),
+                            ),
+                            if (SmartCareSession.currentRole ==
+                                UserRole.secretary)
+                              ElevatedButton.icon(
+                                onPressed: _addWalkIn,
+                                icon: const Icon(Icons.person_add, size: 18),
+                                label: const Text('Add Walk-in'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF006837),
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         if (_isLoading)
@@ -537,10 +666,13 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
                                 columns: const [
                                   DataColumn(label: Text('APPOINTMENT ID')),
                                   DataColumn(label: Text('REFERENCE NO.')),
+                                  DataColumn(label: Text('QUEUE NO.')),
                                   DataColumn(label: Text('FULL NAME')),
+                                  DataColumn(label: Text('CONTACT NO.')),
+                                  DataColumn(label: Text('EMAIL')),
                                   DataColumn(label: Text('LOCATION')),
                                   DataColumn(
-                                    label: Text('SCHEDULE DATE & TIME'),
+                                    label: Text('SCHEDULE DATE & SESSION'),
                                   ),
                                   DataColumn(label: Text('STATUS')),
                                   DataColumn(label: Text('CREATED AT')),
@@ -566,7 +698,26 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
                                       ),
                                       DataCell(
                                         Text(
+                                          "${appointmentQueueLabel(appointment)}\n"
+                                          "${bookingTypeLabel(appointment)}",
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(
                                           appointment['full_name'] as String,
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          _orDash(appointment['contact_number']),
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Text(
+                                          _orDash(appointment['email']),
                                           style: const TextStyle(fontSize: 12),
                                         ),
                                       ),
@@ -579,7 +730,7 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
                                       DataCell(
                                         Text(
                                           "${_formatDate(appointment['schedule_date'] as String)}\n"
-                                          "${appointment['time_slot']}",
+                                          "${appointmentTimeLabel(appointment)}",
                                           style: const TextStyle(fontSize: 12),
                                         ),
                                       ),
@@ -596,7 +747,12 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
                                                     ),
                                               )
                                             : PopupMenuButton<String>(
-                                                tooltip: 'Change status',
+                                                enabled: !_isFinalStatus(
+                                                  status,
+                                                ),
+                                                tooltip: _isFinalStatus(status)
+                                                    ? 'This appointment is final and can no longer be changed'
+                                                    : 'Change status',
                                                 onSelected: (value) =>
                                                     _changeStatus(
                                                       appointment,
@@ -645,9 +801,17 @@ class _RoleAppointmentScreenState extends State<RoleAppointmentScreen> {
                                                         ),
                                                       ),
                                                       const SizedBox(width: 2),
-                                                      const Icon(
-                                                        Icons.arrow_drop_down,
-                                                        size: 16,
+                                                      Icon(
+                                                        _isFinalStatus(status)
+                                                            ? Icons.lock
+                                                            : Icons
+                                                                  .arrow_drop_down,
+                                                        size:
+                                                            _isFinalStatus(
+                                                              status,
+                                                            )
+                                                            ? 12
+                                                            : 16,
                                                         color: Color(
                                                           0xFF1A3320,
                                                         ),

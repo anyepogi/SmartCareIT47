@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 
 class ContactService {
@@ -21,9 +19,8 @@ class ContactService {
   }) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/contact/send_message.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'name': name,
         'email': email,

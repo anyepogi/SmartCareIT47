@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 
 class SignInService {
@@ -19,9 +17,8 @@ class SignInService {
   }) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/login.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'password': password}),
     );
 
@@ -32,5 +29,19 @@ class SignInService {
     }
 
     return body['user'] as Map<String, dynamic>;
+  }
+
+  /* This tells the backend to delete this login token so it can never
+  be used again. It is best effort: the app clears its own session either
+  way, so a failed request (for example no internet) is ignored. The
+  token is passed in explicitly because the app has usually already
+  forgotten it by the time this runs. */
+  static Future<void> logout(String token) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/logout.php');
+    try {
+      await ApiConfig.post(uri, headers: {'X-Auth-Token': token});
+    } catch (_) {
+      // Ignore: the session is already cleared on this device.
+    }
   }
 }

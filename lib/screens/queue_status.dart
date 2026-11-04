@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../data/location_schedule.dart';
 import '../services/appointment/appointment_service.dart';
 import '../state/app_session.dart';
 import '../widgets/smartcare_bottom_nav.dart';
@@ -28,22 +31,41 @@ class QueueStatusPage extends StatefulWidget {
 }
 
 class _QueueStatusPageState extends State<QueueStatusPage> {
+  /// How often the queue number and Patients Ahead are re-checked while
+  /// this screen is open.
+  static const _refreshInterval = Duration(seconds: 20);
+
   Map<String, dynamic>? _appointment;
   bool _isLoading = true;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _refreshTimer = Timer.periodic(
+      _refreshInterval,
+      (_) => _load(showSpinner: false),
+    );
   }
 
-  Future<void> _load() async {
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  /* Gets the patient's appointment and place in line again. The first
+  load shows a spinner; the automatic refresh every 20 seconds and pull
+  to refresh update the numbers quietly. If a quiet refresh fails (for
+  example no internet for a moment), the last numbers stay on screen. */
+  Future<void> _load({bool showSpinner = true}) async {
     final userId = SmartCareSession.currentUserId;
     if (userId == null) {
       setState(() => _isLoading = false);
       return;
     }
-    setState(() => _isLoading = true);
+    if (showSpinner) setState(() => _isLoading = true);
     try {
       final appt = await AppointmentService.getUpcoming(userId);
       if (!mounted) return;
@@ -57,19 +79,22 @@ class _QueueStatusPageState extends State<QueueStatusPage> {
     }
   }
 
+  /// The patient's queue number, like SO3.
   String get _queueNumber {
-    final ref = _appointment?['reference_no'] as String?;
-    if (ref == null || ref.length < 2) return "--";
-    return ref.substring(ref.length - 2);
+    final appointment = _appointment;
+    if (appointment == null) return "--";
+    final label = appointmentQueueLabel(appointment);
+    return label.isEmpty ? "--" : label;
   }
 
   String get _dateTimeLabel {
     final date = _appointment?['schedule_date'] as String?;
-    final slot = _appointment?['time_slot'] as String?;
-    if (date == null || slot == null) return "";
+    final appointment = _appointment;
+    if (date == null || appointment == null) return "";
+    final session = appointmentTimeLabel(appointment);
     final parsed = DateTime.tryParse(date);
-    if (parsed == null) return "$date at $slot";
-    return "${_monthNames[parsed.month - 1]} ${parsed.day}, ${parsed.year} at $slot";
+    if (parsed == null) return "$date, $session";
+    return "${_monthNames[parsed.month - 1]} ${parsed.day}, ${parsed.year}, $session";
   }
 
   @override
@@ -80,35 +105,41 @@ class _QueueStatusPageState extends State<QueueStatusPage> {
         currentItem: SmartCareBottomItem.queue,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              const SmartCareDashboardHeader(
-                title: "Queue Status",
-                subtitle:
-                    "Track queue updates and monitor appointment status in real time.",
-              ),
-
-              // BODY
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 20,
+        child: RefreshIndicator(
+          color: const Color(0xFF006B2D),
+          onRefresh: () => _load(showSpinner: false),
+          child: SingleChildScrollView(
+            // Lets pull to refresh work even when the content is short.
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                const SmartCareDashboardHeader(
+                  title: "Queue Status",
+                  subtitle:
+                      "Track queue updates and monitor appointment status in real time.",
                 ),
-                child: _isLoading
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 40),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFF006B2D),
+
+                // BODY
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 20,
+                  ),
+                  child: _isLoading
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF006B2D),
+                            ),
                           ),
-                        ),
-                      )
-                    : _appointment == null
-                    ? _buildNoAppointment()
-                    : _buildQueueCard(),
-              ),
-            ],
+                        )
+                      : _appointment == null
+                      ? _buildNoAppointment()
+                      : _buildQueueCard(),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -143,7 +174,8 @@ class _QueueStatusPageState extends State<QueueStatusPage> {
 
   Widget _buildQueueCard() {
     final appointment = _appointment!;
-    final total = appointment['total_in_queue']?.toString() ?? "1";
+    // Patients still waiting or being served with a lower queue number.
+    final ahead = appointment['patients_ahead']?.toString() ?? "0";
 
     return Column(
       children: [
@@ -175,15 +207,23 @@ class _QueueStatusPageState extends State<QueueStatusPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          _queueNumber,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                            height: 0.9,
+                        // Queue codes like SO12 are wider than the old
+                        // 2-digit numbers, so shrink to fit the circle.
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              _queueNumber,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                height: 0.9,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 0),
                         const Text(
@@ -261,7 +301,7 @@ class _QueueStatusPageState extends State<QueueStatusPage> {
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        "Please arrive at least 10 minutes before your scheduled time.",
+                        "Please be at the clinic before your queue number is called.",
                         style: TextStyle(
                           color: Color(0xFF146F1B),
                           fontSize: 11,
@@ -300,8 +340,8 @@ class _QueueStatusPageState extends State<QueueStatusPage> {
               Container(height: 60, width: 1, color: const Color(0xFFD0D0D0)),
               Expanded(
                 child: _CompactInfoTile(
-                  label: "Total in Queue",
-                  value: total,
+                  label: "Patients Ahead",
+                  value: ahead,
                   icon: Icons.people_outline,
                 ),
               ),

@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
+import '../data/location_schedule.dart';
 import '../services/appointment/appointment_service.dart';
 import '../services/navigation_transitions.dart';
 import '../services/geofence/geofence_service.dart';
@@ -7,15 +11,18 @@ import '../services/queue/queue_service.dart';
 import '../state/app_session.dart';
 import '../widgets/smartcare_dashboard_header.dart';
 import '../widgets/smartcare_bottom_nav.dart';
+import '../widgets/walk_in_dialog.dart';
 import 'serving.dart';
 
-/// "Good morning, Sec. Juana" when the logged-in secretary's first name is
-/// known, falling back to "Good morning, Secretary" otherwise.
+/// "Good morning, Sec. Juana" (or afternoon/evening, by the time of day)
+/// when the logged-in secretary's first name is known, falling back to
+/// "Good morning, Secretary" otherwise.
 String _greetingTitle({required String prefix, required String roleLabel}) {
   final firstName = SmartCareSession.currentUserFirstName;
+  final greeting = timeOfDayGreeting();
   return (firstName != null && firstName.isNotEmpty)
-      ? "Good morning, $prefix $firstName"
-      : "Good morning, $roleLabel";
+      ? "$greeting, $prefix $firstName"
+      : "$greeting, $roleLabel";
 }
 
 class SecretaryDashboardScreen extends StatefulWidget {
@@ -35,6 +42,14 @@ class _SecretaryDashboardScreenState extends State<SecretaryDashboardScreen> {
   bool _doctorIsActuallyInClinic = false;
   String? _doctorCurrentLocation;
 
+  /// The clinic the doctor is on the way to, with his ETA and distance,
+  /// or null when he isn't travelling to one.
+  ClinicAvailability? _doctorOnTheWay;
+
+  /// Reloads the doctor's status every minute, the same rate his phone
+  /// reports its position, so the ETA and "Inside" status stay current.
+  Timer? _doctorStatusTimer;
+
   @override
   void initState() {
     super.initState();
@@ -42,10 +57,20 @@ class _SecretaryDashboardScreenState extends State<SecretaryDashboardScreen> {
     _loadQueue();
     _loadTotalBooked();
     _loadDoctorGeofenceStatus();
+    _doctorStatusTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => _loadDoctorGeofenceStatus(),
+    );
     final userId = SmartCareSession.currentUserId;
     if (userId != null) {
       AppointmentReminderService.syncAndShowNewNotifications(userId);
     }
+  }
+
+  @override
+  void dispose() {
+    _doctorStatusTimer?.cancel();
+    super.dispose();
   }
 
   /// Whether the clinic's doctor is currently detected inside a clinic
@@ -65,6 +90,36 @@ class _SecretaryDashboardScreenState extends State<SecretaryDashboardScreen> {
     } catch (_) {
       // Leave the card showing "not in clinic" if this fails.
     }
+
+    // Uses the same status patients see, so the secretary's ETA always
+    // matches theirs (she also gets the distance, which patients don't).
+    try {
+      final status = await GeofenceService.getStatus();
+      final onTheWay = status.clinics.values
+          .where((c) => c.presence == ClinicPresence.onTheWay)
+          .firstOrNull;
+      if (!mounted) return;
+      setState(() => _doctorOnTheWay = onTheWay);
+    } catch (_) {
+      // Keep the last ETA shown; the next minute's reload will retry.
+    }
+  }
+
+  /// Records a walk-in patient, then reloads today's list so a walk-in for
+  /// today shows up right away.
+  Future<void> _addWalkIn() async {
+    final booking = await showWalkInDialog(context);
+    if (booking == null || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          "Walk-in recorded. Queue number ${booking.queueCode} "
+          "(${booking.code}).",
+        ),
+      ),
+    );
+    _loadQueue();
+    _loadTotalBooked();
   }
 
   Future<void> _loadQueue() async {
@@ -117,12 +172,15 @@ class _SecretaryDashboardScreenState extends State<SecretaryDashboardScreen> {
         .toUpperCase();
   }
 
+  /// The queue number being served, out of how many queue numbers that
+  /// clinic has given out today, like SO2/5.
   String get _nowServingValue {
     final serving = _queue.where((p) => p['status'] == 'serving');
     if (serving.isEmpty) return "--";
-    final ref = serving.first['reference_no'] as String? ?? '';
-    if (ref.length < 2) return "--";
-    return "#${ref.substring(ref.length - 2)}";
+    return nowServingLabel(
+      serving.first,
+      (serving.first['session_total'] as num?)?.toInt(),
+    );
   }
 
   String _statusLabel(String status) {
@@ -133,6 +191,8 @@ class _SecretaryDashboardScreenState extends State<SecretaryDashboardScreen> {
         return 'With Doctor';
       case 'completed':
         return 'Completed';
+      case 'no_show':
+        return 'No-Show';
       default:
         return 'Waiting';
     }
@@ -148,13 +208,12 @@ class _SecretaryDashboardScreenState extends State<SecretaryDashboardScreen> {
   }
 
   void _openConsultation(BuildContext context, Map<String, dynamic> patient) {
-    final waitingList = _queue
-        .where((p) => p['appointment_id'] != patient['appointment_id'])
+    final waitingList = waitingInLine(_queue, patient)
         .map(
           (p) => {
             'initials': _initialsFor(p['patient_name'] as String),
             'name': p['patient_name'] as String,
-            'time': p['time_slot'] as String,
+            'time': appointmentQueueLabel(p),
           },
         )
         .toList();
@@ -165,12 +224,13 @@ class _SecretaryDashboardScreenState extends State<SecretaryDashboardScreen> {
             transition: SmartCareTransition.subPage,
             builder: (context) => ServingScreen(
               appointmentId: patient['appointment_id'] as int,
-              patientUserId: patient['user_id'] as int,
+              patientUserId: patient['user_id'] as int?,
               patientName: patient['patient_name'] as String,
               referenceNo: patient['reference_no'] as String? ?? '',
-              timeSlot: patient['time_slot'] as String,
+              queueLabel: appointmentQueueLabel(patient),
               location: patient['location'] as String,
               status: patient['status'] as String,
+              scheduleDate: patient['schedule_date'] as String?,
               waitingPatients: waitingList,
             ),
           ),
@@ -266,6 +326,26 @@ class _SecretaryDashboardScreenState extends State<SecretaryDashboardScreen> {
                             _GeofencingStatusCard(
                               isActuallyInClinic: _doctorIsActuallyInClinic,
                               currentLocation: _doctorCurrentLocation,
+                              onTheWay: _doctorIsActuallyInClinic
+                                  ? null
+                                  : _doctorOnTheWay,
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 44,
+                              child: ElevatedButton.icon(
+                                onPressed: _addWalkIn,
+                                icon: const Icon(Icons.person_add, size: 18),
+                                label: const Text("Add Walk-in Patient"),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF16751F),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 16),
                             _SectionHeader(
@@ -316,7 +396,7 @@ class _SecretaryDashboardScreenState extends State<SecretaryDashboardScreen> {
                                             initials: _initialsFor(name),
                                             name: name,
                                             detail:
-                                                "${consultation['time_slot']} • "
+                                                "${appointmentQueueLabel(consultation)} • "
                                                 "${_statusLabel(consultation['status'] as String)}",
                                             isActive:
                                                 consultation['status'] ==
@@ -365,10 +445,31 @@ class _GeofencingStatusCard extends StatelessWidget {
   const _GeofencingStatusCard({
     required this.isActuallyInClinic,
     required this.currentLocation,
+    this.onTheWay,
   });
 
   final bool isActuallyInClinic;
   final String? currentLocation;
+
+  /// Set while the doctor is travelling to a clinic, to show his ETA.
+  final ClinicAvailability? onTheWay;
+
+  String _etaText(ClinicAvailability clinic) {
+    final minutes = clinic.etaMinutes;
+    final String eta;
+    if (minutes == null) {
+      eta = "ETA unavailable";
+    } else if (minutes < 60) {
+      eta = "ETA: ~$minutes min";
+    } else {
+      final rest = minutes % 60;
+      eta = rest == 0
+          ? "ETA: ~${minutes ~/ 60} hr"
+          : "ETA: ~${minutes ~/ 60} hr $rest min";
+    }
+    final km = clinic.distanceKm;
+    return km == null ? eta : "$eta ($km km away)";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -453,6 +554,51 @@ class _GeofencingStatusCard extends StatelessWidget {
               ),
             ],
           ),
+          if (onTheWay != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE5F4E6),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.directions_car,
+                    color: Color(0xFF16751F),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "On the way to ${onTheWay!.location} Clinic",
+                          style: const TextStyle(
+                            color: Color(0xFF1A3320),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _etaText(onTheWay!),
+                          style: const TextStyle(
+                            color: Color(0xFF16751F),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -752,14 +898,19 @@ class _DashboardStat extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF16751F),
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                // Shrinks long values like "SO12/30" to fit instead of
+                // cutting them off.
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: Color(0xFF16751F),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Text(

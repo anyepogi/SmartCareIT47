@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../../state/app_session.dart';
 import '../api_config.dart';
 
@@ -14,7 +12,7 @@ class UserService {
   static Future<List<Map<String, dynamic>>> getAllUsers() async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/users/get_all_users.php');
 
-    final response = await http.post(uri);
+    final response = await ApiConfig.post(uri);
 
     final Map<String, dynamic> body = jsonDecode(response.body);
     if (response.statusCode != 200 || body['success'] != true) {
@@ -45,9 +43,8 @@ class UserService {
   }) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/users/update_user.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'user_id': userId,
         'email': email,
@@ -76,9 +73,8 @@ class UserService {
   static Future<void> deleteUser(int userId) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/users/delete_user.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'user_id': userId,
         'actor_user_id': SmartCareSession.currentUserId,

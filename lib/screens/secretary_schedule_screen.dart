@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+
+import '../data/location_schedule.dart';
 import '../services/queue/queue_service.dart';
 import '../services/navigation_transitions.dart';
-import '../widgets/manage_slots_panel.dart';
 import '../widgets/smartcare_bottom_nav.dart';
 import '../widgets/smartcare_dashboard_header.dart';
 import 'serving.dart';
@@ -14,6 +15,8 @@ String _scheduleStatusLabel(String status) {
       return 'With Doctor';
     case 'completed':
       return 'Completed';
+    case 'no_show':
+      return 'No-Show';
     default:
       return 'Waiting';
   }
@@ -27,6 +30,8 @@ Color _scheduleStatusColor(String status) {
       return const Color(0xFF1F5AA2);
     case 'completed':
       return const Color(0xFF16A34A);
+    case 'no_show':
+      return const Color(0xFF9CA3AF);
     default:
       return const Color(0xFF6B7280);
   }
@@ -104,13 +109,12 @@ class _SecretaryScheduleScreenState extends State<SecretaryScheduleScreen> {
   }
 
   void _openPatientDetails(BuildContext context, Map<String, dynamic> item) {
-    final waitingList = _queue
-        .where((p) => p['appointment_id'] != item['appointment_id'])
+    final waitingList = waitingInLine(_queue, item)
         .map(
           (p) => {
             'initials': _getInitials(p['patient_name'] as String),
             'name': p['patient_name'] as String,
-            'time': p['time_slot'] as String,
+            'time': appointmentQueueLabel(p),
           },
         )
         .toList();
@@ -121,12 +125,13 @@ class _SecretaryScheduleScreenState extends State<SecretaryScheduleScreen> {
             transition: SmartCareTransition.subPage,
             builder: (context) => ServingScreen(
               appointmentId: item['appointment_id'] as int,
-              patientUserId: item['user_id'] as int,
+              patientUserId: item['user_id'] as int?,
               patientName: item['patient_name'] as String,
               referenceNo: item['reference_no'] as String? ?? '',
-              timeSlot: item['time_slot'] as String,
+              queueLabel: appointmentQueueLabel(item),
               location: item['location'] as String,
               status: item['status'] as String,
+              scheduleDate: item['schedule_date'] as String?,
               waitingPatients: waitingList,
             ),
           ),
@@ -144,7 +149,7 @@ class _SecretaryScheduleScreenState extends State<SecretaryScheduleScreen> {
       final item = displayed[i];
       children.add(
         _AppointmentCard(
-          time: item['time_slot'] as String,
+          time: appointmentQueueLabel(item),
           patient: item['patient_name'] as String,
           status: item['status'] as String,
           onTap: () => _openPatientDetails(context, item),
@@ -300,8 +305,6 @@ class _SecretaryScheduleScreenState extends State<SecretaryScheduleScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      const ManageSlotsPanel(),
                       const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,

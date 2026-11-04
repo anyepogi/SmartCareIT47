@@ -11,6 +11,7 @@ enum SmartCareBottomItem {
   profile,
   visits,
   menu,
+  chatbot,
 }
 
 class SmartCareBottomNav extends StatelessWidget {
@@ -141,12 +142,12 @@ class SmartCareBottomNav extends StatelessWidget {
         routeName: role.dashboardRoute,
         roleToSet: role,
       ),
-      _BottomNavAction(
-        item: SmartCareBottomItem.profile,
-        icon: role == UserRole.patient ? Icons.person : Icons.badge,
-        label: "Profile",
-        routeName: '/profile',
-        roleToSet: role,
+      // Profile is still reachable from Menu and from the dashboard.
+      const _BottomNavAction(
+        item: SmartCareBottomItem.chatbot,
+        icon: Icons.smart_toy,
+        label: "AI Chat",
+        routeName: '/chatbot',
       ),
       const _BottomNavAction(
         item: SmartCareBottomItem.schedule,

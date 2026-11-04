@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../../data/location_schedule.dart';
 import '../../state/notification_center.dart';
 import 'notification_service.dart';
 
@@ -89,6 +90,34 @@ class AppointmentReminderService {
     return (hour, minute);
   }
 
+  /* When the appointment starts, for the reminders: the clinic session's
+  opening time for queue-number appointments, or the old time slot's start
+  for appointments booked before queue numbers. Null if it can't tell. */
+  static DateTime? _appointmentStart(Map<String, dynamic> appointment) {
+    final date = DateTime.tryParse(
+      appointment['schedule_date'] as String? ?? '',
+    );
+    if (date == null) return null;
+    final timeSlot = appointment['time_slot'] as String?;
+    final (int, int)? start;
+    if (timeSlot != null) {
+      start = _parseSlotStart(timeSlot);
+    } else {
+      final range = locationHourRange[appointment['location'] as String? ?? ''];
+      start = range == null ? null : (range.$1, range.$2);
+    }
+    if (start == null) return null;
+    return DateTime(date.year, date.month, date.day, start.$1, start.$2);
+  }
+
+  /// " (Sta. Rita), queue no. SO3" style suffix for reminder messages.
+  static String _whereSuffix(Map<String, dynamic> appointment) {
+    final location = appointment['location'] as String?;
+    final queueCode = appointment['queue_code'] as String?;
+    return "${location != null ? ' ($location)' : ''}"
+        "${queueCode != null ? ', queue no. $queueCode' : ''}";
+  }
+
   static int _reminderIdFor(int appointmentId, int offset) =>
       appointmentId * 10 + offset;
 
@@ -104,39 +133,24 @@ class AppointmentReminderService {
     await initialize();
 
     final appointmentId = appointment['appointment_id'] as int?;
-    final scheduleDate = appointment['schedule_date'] as String?;
-    final timeSlot = appointment['time_slot'] as String?;
-    final location = appointment['location'] as String?;
-    if (appointmentId == null || scheduleDate == null || timeSlot == null) {
-      return;
-    }
+    if (appointmentId == null) return;
 
     await cancelForAppointment(appointmentId);
 
-    final date = DateTime.tryParse(scheduleDate);
-    final slotStart = _parseSlotStart(timeSlot);
-    if (date == null || slotStart == null) return;
-
-    final appointmentTime = tz.TZDateTime(
-      tz.local,
-      date.year,
-      date.month,
-      date.day,
-      slotStart.$1,
-      slotStart.$2,
-    );
-
-    final dateLabel =
-        "${_monthNames[appointmentTime.month - 1]} ${appointmentTime.day}";
+    final start = _appointmentStart(appointment);
+    if (start == null) return;
+    final appointmentTime = tz.TZDateTime.from(start, tz.local);
+    final dateLabel = "${_monthNames[start.month - 1]} ${start.day}";
+    final timeLabel = appointmentTimeLabel(appointment);
+    final where = _whereSuffix(appointment);
 
     await _scheduleIfFuture(
       id: _reminderIdFor(appointmentId, 1),
       fireTime: appointmentTime.subtract(const Duration(hours: 1)),
       title: "Appointment in 1 hour",
       body:
-          "Your appointment on $dateLabel at $timeSlot"
-          "${location != null ? ' ($location)' : ''} is coming up. "
-          "Please arrive earlier than your schedule, at least 10 minutes before.",
+          "Your appointment on $dateLabel at $timeLabel$where is coming up. "
+          "Please be at the clinic before your queue number is called.",
     );
 
     await _scheduleIfFuture(
@@ -144,8 +158,7 @@ class AppointmentReminderService {
       fireTime: appointmentTime.subtract(const Duration(minutes: 10)),
       title: "Appointment in 10 minutes",
       body:
-          "Your appointment on $dateLabel at $timeSlot"
-          "${location != null ? ' ($location)' : ''} is starting soon. "
+          "Your appointment on $dateLabel at $timeLabel$where is starting soon. "
           "Please head to the clinic now.",
     );
   }
@@ -200,29 +213,17 @@ class AppointmentReminderService {
     required Map<String, dynamic> appointment,
   }) async {
     final appointmentId = appointment['appointment_id'] as int?;
-    final scheduleDate = appointment['schedule_date'] as String?;
-    final timeSlot = appointment['time_slot'] as String?;
-    final location = appointment['location'] as String?;
-    if (appointmentId == null || scheduleDate == null || timeSlot == null) {
-      return;
-    }
+    if (appointmentId == null) return;
 
-    final date = DateTime.tryParse(scheduleDate);
-    final slotStart = _parseSlotStart(timeSlot);
-    if (date == null || slotStart == null) return;
-
-    final appointmentTime = DateTime(
-      date.year,
-      date.month,
-      date.day,
-      slotStart.$1,
-      slotStart.$2,
-    );
+    final appointmentTime = _appointmentStart(appointment);
+    if (appointmentTime == null) return;
     final remaining = appointmentTime.difference(DateTime.now());
     if (remaining.isNegative) return;
 
-    final dateLabel = "${_monthNames[date.month - 1]} ${date.day}";
-    final locationSuffix = location != null ? ' ($location)' : '';
+    final dateLabel =
+        "${_monthNames[appointmentTime.month - 1]} ${appointmentTime.day}";
+    final timeSlot = appointmentTimeLabel(appointment);
+    final locationSuffix = _whereSuffix(appointment);
     final prefs = await SharedPreferences.getInstance();
 
     if (remaining <= const Duration(hours: 1)) {
@@ -233,8 +234,8 @@ class AppointmentReminderService {
         title: "Appointment in 1 hour",
         message:
             "Your appointment on $dateLabel at $timeSlot$locationSuffix is "
-            "coming up. Please arrive earlier than your schedule, at least "
-            "10 minutes before.",
+            "coming up. Please be at the clinic before your queue number "
+            "is called.",
       );
     }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth/saved_login_service.dart';
 import '../services/auth/sign_in_services.dart';
 import '../services/notifications/appointment_reminder_service.dart';
 import '../state/app_session.dart';
@@ -18,6 +19,26 @@ class _SignInScreenState extends State<SignInScreen> {
   bool _isSubmitting = false;
   bool _rememberMe = false;
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedLogin();
+  }
+
+  // Fills in the form with the email and password from a previous
+  // "Remember me" sign-in, if there is one.
+  Future<void> _loadSavedLogin() async {
+    final saved = await SavedLoginService.load();
+    if (saved == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _emailController.text = saved.email;
+      _passwordController.text = saved.password;
+      _rememberMe = true;
+    });
+  }
 
   @override
   void dispose() {
@@ -48,6 +69,16 @@ class _SignInScreenState extends State<SignInScreen> {
         return;
       }
       await SmartCareSession.setCurrentUser(user);
+
+      // Only keep the login after it worked, so a wrong password is never saved.
+      if (_rememberMe) {
+        await SavedLoginService.save(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+      } else {
+        await SavedLoginService.clear();
+      }
       await AppointmentReminderService.requestPermissions();
 
       if (!mounted) {

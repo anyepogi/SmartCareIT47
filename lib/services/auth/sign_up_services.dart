@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 import 'resend_cooldown_exception.dart';
 
@@ -30,9 +28,8 @@ class SignUpService {
       '${ApiConfig.baseUrl}/api/auth/send_verification_code.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'firstName': firstName,
         'middleName': middleName,
@@ -73,9 +70,8 @@ class SignUpService {
   }) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/register.php');
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'code': code}),
     );
 

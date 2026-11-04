@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth/change_password_service.dart';
 import '../widgets/smartcare_bottom_nav.dart';
 import '../widgets/smartcare_dashboard_header.dart';
 
@@ -70,8 +71,76 @@ class NotificationSettingsScreen extends StatelessWidget {
   }
 }
 
-class ChangePasswordScreen extends StatelessWidget {
+class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
+
+  @override
+  State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+}
+
+class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
+  final _current = TextEditingController();
+  final _new = TextEditingController();
+  final _confirm = TextEditingController();
+  bool _isSaving = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _current.dispose();
+    _new.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  /// Checks the same rules as change_password.php before sending, so
+  /// simple mistakes are shown right away.
+  String? _validate() {
+    final newPassword = _new.text.trim();
+    if (_current.text.isEmpty || newPassword.isEmpty || _confirm.text.isEmpty) {
+      return "Please fill in all three fields.";
+    }
+    if (newPassword.length < 8 || !RegExp(r'\d').hasMatch(newPassword)) {
+      return "Password must be at least 8 characters and include a number.";
+    }
+    if (newPassword != _confirm.text.trim()) {
+      return "New password and confirmation don't match.";
+    }
+    return null;
+  }
+
+  Future<void> _save() async {
+    if (_isSaving) return;
+    final error = _validate();
+    if (error != null) {
+      setState(() => _error = error);
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _error = null;
+    });
+    try {
+      await ChangePasswordService.changePassword(
+        currentPassword: _current.text,
+        newPassword: _new.text.trim(),
+      );
+      if (!mounted) return;
+      _current.clear();
+      _new.clear();
+      _confirm.clear();
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Password changed successfully.")),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+        _error = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,19 +148,29 @@ class ChangePasswordScreen extends StatelessWidget {
       title: "Change Password",
       subtitle: "Update your password to keep your account secure.",
       children: [
-        const _PasswordField(label: "Current Password"),
-        const _PasswordField(label: "New Password"),
-        const _PasswordField(label: "Confirm New Password"),
+        _PasswordField(label: "Current Password", controller: _current),
+        _PasswordField(label: "New Password", controller: _new),
+        _PasswordField(label: "Confirm New Password", controller: _confirm),
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            "At least 8 characters, with at least one number.",
+            style: TextStyle(color: Color(0xFF4F7B55), fontSize: 12),
+          ),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(_error!, style: const TextStyle(color: Colors.red)),
+          ),
+        ],
         const SizedBox(height: 18),
         SizedBox(
           width: double.infinity,
           height: 50,
           child: ElevatedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Password update requested.")),
-              );
-            },
+            onPressed: _isSaving ? null : _save,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF146F1B),
               foregroundColor: Colors.white,
@@ -99,10 +178,19 @@ class ChangePasswordScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
               ),
             ),
-            child: const Text(
-              "Update Password",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text(
+                    "Update Password",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
           ),
         ),
       ],
@@ -324,15 +412,17 @@ class _SettingTileShell extends StatelessWidget {
 }
 
 class _PasswordField extends StatelessWidget {
-  const _PasswordField({required this.label});
+  const _PasswordField({required this.label, required this.controller});
 
   final String label;
+  final TextEditingController controller;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: TextField(
+        controller: controller,
         obscureText: true,
         decoration: InputDecoration(
           labelText: label,

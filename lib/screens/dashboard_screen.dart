@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'resched.dart';
@@ -8,7 +10,6 @@ import '../services/geofence/geofence_service.dart';
 import '../services/notifications/appointment_reminder_service.dart';
 import '../services/profile/profile_service.dart';
 import '../services/queue/queue_service.dart';
-import '../services/schedule/schedule_service.dart';
 import '../state/app_session.dart';
 import 'confirm.dart';
 import 'cancelled.dart';
@@ -42,22 +43,18 @@ const List<String> _dashboardWeekdayNames = [
 ];
 
 class _ScheduleSuggestion {
-  const _ScheduleSuggestion({
-    required this.date,
-    required this.location,
-    required this.timeSlot,
-  });
+  const _ScheduleSuggestion({required this.date, required this.location});
 
   final DateTime date;
   final String location;
-  final String timeSlot;
 
   String get dateKey =>
       "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
 
   String get label {
     final weekday = _dashboardWeekdayNames[date.weekday - 1];
-    return "$weekday, ${_dashboardMonthNames[date.month - 1]} ${date.day} at $timeSlot";
+    return "$weekday, ${_dashboardMonthNames[date.month - 1]} ${date.day} "
+        "(${sessionTimeLabel(location) ?? ''})";
   }
 }
 
@@ -90,10 +87,10 @@ DateTime? _nextValidDateForLocation(String location, {int skip = 0}) {
   return null;
 }
 
-String _formatAppointmentDateTime(String isoDate, String timeSlot) {
+String _formatAppointmentDateTime(String isoDate, String sessionTime) {
   final date = DateTime.tryParse(isoDate);
-  if (date == null) return "$isoDate at $timeSlot";
-  return "${_dashboardMonthNames[date.month - 1]} ${date.day}, ${date.year} at $timeSlot";
+  if (date == null) return "$isoDate, $sessionTime";
+  return "${_dashboardMonthNames[date.month - 1]} ${date.day}, ${date.year}, $sessionTime";
 }
 
 Future<String> _currentPatientName() async {
@@ -172,11 +169,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  /// Picks a recommendation based on the patient's historical weekday/
-  /// location/time preferences, but only ever suggests a slot that's
-  /// actually open right now (not blocked by staff, not already booked).
-  /// Checks up to 4 upcoming occurrences of the preferred weekday before
-  /// giving up.
+  /// Picks a recommendation based on the patient's historical weekday and
+  /// location preferences: the next date on their usual weekday at their
+  /// usual clinic, plus the following two as alternatives. There are no
+  /// time slots to check anymore, since every booking just gets the next
+  /// queue number for that day.
   Future<void> _computeSuggestions() async {
     final pattern = _bookingPattern;
     if (pattern == null || pattern['has_history'] != true) {
@@ -188,8 +185,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     final weekdays = pattern['weekdays'] as List;
     final locations = pattern['locations'] as List;
-    final timeSlots = pattern['time_slots'] as List;
-    if (weekdays.isEmpty || locations.isEmpty || timeSlots.isEmpty) {
+    if (weekdays.isEmpty || locations.isEmpty) {
       setState(() {
         _topSuggestion = null;
         _alternativeSuggestions = [];
@@ -199,11 +195,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final weekday = weekdays[0]['weekday'] as int;
     final location = locations[0]['location'] as String;
-    final preferredSlot = timeSlots[0]['time_slot'] as String;
-    final slotsForLocation = timeSlotsForLocation(location);
-    final preferredIndex = slotsForLocation.indexOf(preferredSlot);
-
-    setState(() => _isCheckingSuggestion = true);
 
     // The patient's historically preferred weekday may no longer be one of
     // this location's active clinic days (e.g. old data from before hours
@@ -214,69 +205,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final candidateDates =
         isDateValidForLocation(location, preferredWeekdayDate)
         ? List.generate(
-            4,
+            3,
             (occurrence) =>
                 _nextDateForWeekday(weekday, occurrence: occurrence),
           )
         : List.generate(
-            4,
+            3,
             (skip) => _nextValidDateForLocation(location, skip: skip),
           ).whereType<DateTime>().toList();
 
-    for (final date in candidateDates) {
-      final dateKey =
-          "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-
-      List<String> blocked;
-      try {
-        blocked = await ScheduleService.getBlockedSlots(
-          location: location,
-          date: dateKey,
-        );
-      } catch (_) {
-        if (!mounted) return;
-        setState(() => _isCheckingSuggestion = false);
-        return;
-      }
-      final blockedSet = blocked.toSet();
-      final available = slotsForLocation
-          .where((slot) => !blockedSet.contains(slot))
-          .toList();
-      if (available.isEmpty) continue;
-
-      available.sort((a, b) {
-        final da = (slotsForLocation.indexOf(a) - preferredIndex).abs();
-        final db = (slotsForLocation.indexOf(b) - preferredIndex).abs();
-        return da.compareTo(db);
-      });
-
-      if (!mounted) return;
-      setState(() {
-        _topSuggestion = _ScheduleSuggestion(
-          date: date,
-          location: location,
-          timeSlot: available.first,
-        );
-        _alternativeSuggestions = available
-            .skip(1)
-            .take(2)
-            .map(
-              (slot) => _ScheduleSuggestion(
-                date: date,
-                location: location,
-                timeSlot: slot,
-              ),
-            )
-            .toList();
-        _isCheckingSuggestion = false;
-      });
-      return;
-    }
-
     if (!mounted) return;
     setState(() {
-      _topSuggestion = null;
-      _alternativeSuggestions = [];
+      final suggestions = candidateDates
+          .map((date) => _ScheduleSuggestion(date: date, location: location))
+          .toList();
+      _topSuggestion = suggestions.isEmpty ? null : suggestions.first;
+      _alternativeSuggestions = suggestions.skip(1).toList();
       _isCheckingSuggestion = false;
     });
   }
@@ -285,14 +229,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_isBookingSuggestion) return;
     setState(() => _isBookingSuggestion = true);
     try {
-      await AppointmentService.book(
+      final booking = await AppointmentService.book(
         userId: SmartCareSession.currentUserId ?? 0,
         location: suggestion.location,
         date: suggestion.dateKey,
-        timeSlot: suggestion.timeSlot,
       );
       if (!mounted) return;
-      _showMessage("Appointment booked for ${suggestion.label}.");
+      _showMessage(
+        "Appointment booked for ${suggestion.label}. Your queue number is "
+        "${booking.queueCode}.",
+      );
       await _loadUpcomingAppointment();
       await _computeSuggestions();
     } catch (e) {
@@ -385,17 +331,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  /// The patient's queue number, like SO3.
   String get _queueNumberValue {
-    final ref = _upcomingAppointment?['reference_no'] as String?;
-    if (ref == null || ref.length < 2) return "--";
-    return ref.substring(ref.length - 2);
+    final appointment = _upcomingAppointment;
+    if (appointment == null) return "--";
+    final label = appointmentQueueLabel(appointment);
+    return label.isEmpty ? "--" : label;
   }
 
-  String get _nowServingValue {
-    final ref = _nowServing?['reference_no'] as String?;
-    if (ref == null || ref.length < 2) return "--";
-    return ref.substring(ref.length - 2);
-  }
+  /// The queue number being served now at the patient's clinic, out of
+  /// how many queue numbers that clinic has given out today, like SW2/5.
+  String get _nowServingValue => nowServingLabel(
+    _nowServing,
+    (_nowServing?['total_in_session'] as num?)?.toInt(),
+  );
 
   String get _queueDateDetail {
     final date = _upcomingAppointment?['schedule_date'] as String?;
@@ -486,7 +435,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     );
 
-    Overlay.of(context)?.insert(_cancellingOverlayEntry!);
+    Overlay.of(context).insert(_cancellingOverlayEntry!);
   }
 
   void _hideCancellingOverlay() {
@@ -507,7 +456,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             SafeArea(
               child: LayoutBuilder(
-                builder: (context, constraints) {
+                builder: (_, constraints) {
                   final horizontalPadding = constraints.maxWidth < 380
                       ? 12.0
                       : 16.0;
@@ -603,16 +552,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       location:
                                           _upcomingAppointment!['location']
                                               as String,
+                                      status:
+                                          _upcomingAppointment!['status']
+                                              as String?,
                                       dateTimeText: _formatAppointmentDateTime(
                                         _upcomingAppointment!['schedule_date']
                                             as String,
-                                        _upcomingAppointment!['time_slot']
-                                            as String,
+                                        appointmentTimeLabel(
+                                          _upcomingAppointment!,
+                                        ),
                                       ),
                                       onViewDetails: () async {
                                         final patientName =
                                             await _currentPatientName();
-                                        if (!mounted) return;
+                                        if (!context.mounted) return;
                                         Navigator.push(
                                           context,
                                           smartCareRoute(
@@ -622,8 +575,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                               dateTime: _formatAppointmentDateTime(
                                                 _upcomingAppointment!['schedule_date']
                                                     as String,
-                                                _upcomingAppointment!['time_slot']
-                                                    as String,
+                                                appointmentTimeLabel(
+                                                  _upcomingAppointment!,
+                                                ),
                                               ),
                                               patientName: patientName,
                                               appointmentId:
@@ -633,6 +587,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                               location:
                                                   _upcomingAppointment!['location']
                                                       as String,
+                                              queueCode:
+                                                  _upcomingAppointment!['queue_code']
+                                                      as String?,
                                               isExistingView: true,
                                             ),
                                           ),
@@ -803,8 +760,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                                     : _formatAppointmentDateTime(
                                                                         _upcomingAppointment!['schedule_date']
                                                                             as String,
-                                                                        _upcomingAppointment!['time_slot']
-                                                                            as String,
+                                                                        appointmentTimeLabel(
+                                                                          _upcomingAppointment!,
+                                                                        ),
                                                                       ),
                                                               ),
                                                               const SizedBox(
@@ -843,8 +801,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                                   : _formatAppointmentDateTime(
                                                                       _upcomingAppointment!['schedule_date']
                                                                           as String,
-                                                                      _upcomingAppointment!['time_slot']
-                                                                          as String,
+                                                                      appointmentTimeLabel(
+                                                                        _upcomingAppointment!,
+                                                                      ),
                                                                     );
                                                               final cancelledRef =
                                                                   _upcomingAppointment?['reference_no']
@@ -863,6 +822,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                                     true;
                                                               });
                                                               _showCancellingOverlay();
+                                                              // The backend can refuse, for
+                                                              // example when the secretary just
+                                                              // sent the patient to the doctor.
+                                                              String?
+                                                              cancelError;
                                                               try {
                                                                 await AppointmentService.cancel(
                                                                   appointmentId,
@@ -870,8 +834,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                                 await AppointmentReminderService.cancelForAppointment(
                                                                   appointmentId,
                                                                 );
-                                                              } catch (_) {
-                                                                // still refresh state below
+                                                              } catch (e) {
+                                                                cancelError = e
+                                                                    .toString()
+                                                                    .replaceFirst(
+                                                                      'Exception: ',
+                                                                      '',
+                                                                    );
                                                               }
                                                               if (!mounted) {
                                                                 _hideCancellingOverlay();
@@ -886,9 +855,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                               if (!mounted) {
                                                                 return;
                                                               }
+                                                              // Not cancelled: show why and
+                                                              // stay on the dashboard instead
+                                                              // of the "Appointment Cancelled!"
+                                                              // screen.
+                                                              if (cancelError !=
+                                                                  null) {
+                                                                if (!context
+                                                                    .mounted) {
+                                                                  return;
+                                                                }
+                                                                ScaffoldMessenger.of(
+                                                                  context,
+                                                                ).showSnackBar(
+                                                                  SnackBar(
+                                                                    content: Text(
+                                                                      cancelError,
+                                                                    ),
+                                                                  ),
+                                                                );
+                                                                return;
+                                                              }
                                                               final cancelledPatientName =
                                                                   await _currentPatientName();
-                                                              if (!mounted) {
+                                                              if (!context
+                                                                  .mounted) {
                                                                 return;
                                                               }
                                                               Navigator.pushReplacement(
@@ -991,10 +982,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(8),
                                       onTap: () {
-                                        Navigator.pushNamed(
-                                          context,
-                                          '/chatbot',
-                                        );
+                                        smartCareGoTo(context, '/chatbot');
                                       },
                                       child: _AiRecommendationCard(
                                         suggestion: _topSuggestion,
@@ -1124,9 +1112,10 @@ class _DashboardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firstName = SmartCareSession.currentUserFirstName;
+    final greeting = timeOfDayGreeting();
     final title = (firstName != null && firstName.isNotEmpty)
-        ? "Good morning, $firstName!"
-        : "Good morning!";
+        ? "$greeting, $firstName!"
+        : "$greeting!";
     return SmartCareDashboardHeader(
       title: title,
       subtitle: "Here's your health overview today.",
@@ -1199,14 +1188,18 @@ class _DashboardStat extends StatelessWidget {
               child: Icon(icon, color: iconColor, size: 18),
             ),
             const SizedBox(height: 8),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF16751F),
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            // Shrinks long values like "SO12/30" to fit instead of cutting
+            // them off.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                maxLines: 1,
+                style: const TextStyle(
+                  color: Color(0xFF16751F),
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             const SizedBox(height: 2),
@@ -1357,6 +1350,7 @@ class _NoUpcomingAppointmentCard extends StatelessWidget {
 class _UpcomingAppointmentCard extends StatelessWidget {
   const _UpcomingAppointmentCard({
     required this.location,
+    required this.status,
     required this.dateTimeText,
     required this.onViewDetails,
     required this.onReschedule,
@@ -1364,6 +1358,10 @@ class _UpcomingAppointmentCard extends StatelessWidget {
   });
 
   final String location;
+
+  /// The appointment's status. Once it is sent_to_doctor or serving, the
+  /// Reschedule and Cancel buttons are hidden.
+  final String? status;
   final String dateTimeText;
   final VoidCallback onViewDetails;
   final VoidCallback onReschedule;
@@ -1371,6 +1369,7 @@ class _UpcomingAppointmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final withDoctor = isAppointmentWithDoctor({'status': status});
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -1412,10 +1411,14 @@ class _UpcomingAppointmentCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const _StatusPill(
-                label: "Confirmed",
-                color: Color(0xFFDDF6DD),
-                textColor: Color(0xFF16751F),
+              _StatusPill(
+                label: status == 'serving'
+                    ? "With Doctor"
+                    : status == 'sent_to_doctor'
+                    ? "Sent to Doctor"
+                    : "Confirmed",
+                color: const Color(0xFFDDF6DD),
+                textColor: const Color(0xFF16751F),
               ),
             ],
           ),
@@ -1428,26 +1431,37 @@ class _UpcomingAppointmentCard extends StatelessWidget {
                   onPressed: onViewDetails,
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _OutlineActionButton(
-                  label: "Reschedule",
-                  borderColor: const Color(0xFF16751F),
-                  textColor: const Color(0xFF16751F),
-                  onPressed: onReschedule,
+              if (!withDoctor) ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _OutlineActionButton(
+                    label: "Reschedule",
+                    borderColor: const Color(0xFF16751F),
+                    textColor: const Color(0xFF16751F),
+                    onPressed: onReschedule,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _OutlineActionButton(
-                  label: "Cancel",
-                  borderColor: const Color(0xFFFF4B4B),
-                  textColor: const Color(0xFFE83232),
-                  onPressed: onCancel,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _OutlineActionButton(
+                    label: "Cancel",
+                    borderColor: const Color(0xFFFF4B4B),
+                    textColor: const Color(0xFFE83232),
+                    onPressed: onCancel,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
+          if (withDoctor) ...[
+            const SizedBox(height: 8),
+            const Text(
+              "You're already with the doctor, so this appointment can't be "
+              "rescheduled or cancelled. Please talk to the clinic staff.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFF506D54), fontSize: 11),
+            ),
+          ],
         ],
       ),
     );
@@ -1624,22 +1638,38 @@ class _DoctorAvailabilityCard extends StatefulWidget {
 }
 
 class _DoctorAvailabilityCardState extends State<_DoctorAvailabilityCard> {
-  List<DoctorLocationStatus> _statuses = [];
+  DoctorAvailability? _availability;
   bool _isLoading = true;
+
+  /// Re-fetches the status every 15 seconds, so the patient sees within a
+  /// few seconds when the doctor picks a clinic, starts heading there, or
+  /// arrives, without having to tap refresh. The query is small, so this
+  /// is light on the server.
+  Timer? _autoRefreshTimer;
 
   @override
   void initState() {
     super.initState();
     _loadStatus();
+    _autoRefreshTimer = Timer.periodic(
+      const Duration(seconds: 15),
+      (_) => _loadStatus(showSpinner: false),
+    );
   }
 
-  Future<void> _loadStatus() async {
-    setState(() => _isLoading = true);
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadStatus({bool showSpinner = true}) async {
+    if (showSpinner) setState(() => _isLoading = true);
     try {
-      final statuses = await GeofenceService.getStatus();
+      final availability = await GeofenceService.getStatus();
       if (!mounted) return;
       setState(() {
-        _statuses = statuses;
+        _availability = availability;
         _isLoading = false;
       });
     } catch (_) {
@@ -1655,10 +1685,27 @@ class _DoctorAvailabilityCardState extends State<_DoctorAvailabilityCard> {
 
   @override
   Widget build(BuildContext context) {
-    final anyInClinic = _statuses.isNotEmpty;
-    final doctorName = anyInClinic
-        ? "Dr. ${_statuses.first.doctorName}"
-        : "Doctor";
+    final clinics = _availability?.clinics.values ?? const [];
+    final inClinic = clinics
+        .where((c) => c.presence == ClinicPresence.inClinic)
+        .firstOrNull;
+    final onTheWay = clinics
+        .where((c) => c.presence == ClinicPresence.onTheWay)
+        .firstOrNull;
+    final doctorName = _availability == null
+        ? "Doctor"
+        : "Dr. ${_availability!.doctorName}";
+    final (headerColor, headerText) = inClinic != null
+        ? (
+            _presenceColor(ClinicPresence.inClinic),
+            "In Clinic · ${inClinic.location}",
+          )
+        : onTheWay != null
+        ? (
+            _presenceColor(ClinicPresence.onTheWay),
+            "On the way to ${onTheWay.location}",
+          )
+        : (_presenceColor(ClinicPresence.notInClinic), "Not in Clinic");
 
     return Container(
       width: double.infinity,
@@ -1690,12 +1737,7 @@ class _DoctorAvailabilityCardState extends State<_DoctorAvailabilityCard> {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    _AvailabilityStatus(
-                      color: anyInClinic
-                          ? const Color(0xFF0DA94C)
-                          : const Color(0xFFFF9800),
-                      text: anyInClinic ? "In Clinic" : "Not in Clinic",
-                    ),
+                    _AvailabilityStatus(color: headerColor, text: headerText),
                   ],
                 ),
               ),
@@ -1728,17 +1770,15 @@ class _DoctorAvailabilityCardState extends State<_DoctorAvailabilityCard> {
               ),
             )
           else
-            // Branch list - side by side layout
-            Row(
+            // Branch list - one branch per row
+            Column(
               children: [
                 for (final branch in clinicLocations) ...[
-                  Expanded(
-                    child: _BranchListItem(
-                      branch: branch,
-                      inClinic: _statuses.any((s) => s.location == branch),
-                    ),
+                  _BranchListItem(
+                    branch: branch,
+                    availability: _availability?.clinics[branch],
                   ),
-                  if (branch != clinicLocations.last) const SizedBox(width: 8),
+                  if (branch != clinicLocations.last) const SizedBox(height: 8),
                 ],
               ],
             ),
@@ -1778,34 +1818,57 @@ class _AvailabilityStatus extends StatelessWidget {
   }
 }
 
+/// "8 min", "1 hr 15 min".
+String _formatEta(int minutes) {
+  if (minutes < 60) return "$minutes min";
+  final hours = minutes ~/ 60;
+  final rest = minutes % 60;
+  return rest == 0 ? "$hours hr" : "$hours hr $rest min";
+}
+
+Color _presenceColor(ClinicPresence presence) => switch (presence) {
+  ClinicPresence.inClinic => const Color(0xFF0DA94C),
+  ClinicPresence.onTheWay => const Color(0xFF1E88E5),
+  ClinicPresence.notInClinic => const Color(0xFFFF9800),
+};
+
 class _BranchListItem extends StatelessWidget {
-  const _BranchListItem({required this.branch, required this.inClinic});
+  const _BranchListItem({required this.branch, required this.availability});
 
   final String branch;
-  final bool inClinic;
+  final ClinicAvailability? availability;
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = inClinic ? const Color(0xFF0DA94C) : Colors.orange;
-    final statusText = inClinic ? "In Clinic" : "Not in Clinic";
+    final presence = availability?.presence ?? ClinicPresence.notInClinic;
+    final statusColor = _presenceColor(presence);
+    final eta = availability?.etaMinutes;
+    final statusText = switch (presence) {
+      ClinicPresence.inClinic => "In Clinic",
+      ClinicPresence.onTheWay => "On the way",
+      ClinicPresence.notInClinic => "Not in Clinic",
+    };
+    final etaText = presence == ClinicPresence.onTheWay && eta != null
+        ? "ETA ${_formatEta(eta)}"
+        : null;
 
     return Container(
-      padding: const EdgeInsets.all(8),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: const Color(0xFFD2E7D1)),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.location_on, color: Color(0xFF506D54), size: 16),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
+          const Icon(Icons.location_on, color: Color(0xFF506D54), size: 16),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                   branch,
                   style: const TextStyle(
                     color: Color(0xFF1A3320),
@@ -1815,21 +1878,37 @@ class _BranchListItem extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+                if (etaText != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    etaText,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(width: 8),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  shape: BoxShape.circle,
+              if (presence == ClinicPresence.onTheWay)
+                Icon(Icons.directions_car, color: statusColor, size: 14)
+              else
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    shape: BoxShape.circle,
+                  ),
                 ),
-              ),
               const SizedBox(width: 5),
               Text(
                 statusText,

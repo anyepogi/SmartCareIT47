@@ -4,6 +4,16 @@ import '../state/app_session.dart';
 import '../state/notification_center.dart';
 import 'smartcare_bottom_nav.dart';
 
+/// "Good morning" before 12 noon, "Good afternoon" until 6 PM, and
+/// "Good evening" after that, by the phone's clock. Used by the patient,
+/// doctor, and secretary dashboard headers.
+String timeOfDayGreeting([DateTime? now]) {
+  final hour = (now ?? DateTime.now()).hour;
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
 class SmartCareDashboardHeader extends StatelessWidget {
   const SmartCareDashboardHeader({
     super.key,

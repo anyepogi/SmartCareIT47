@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../data/location_schedule.dart';
 import '../services/appointment/appointment_service.dart';
 import '../services/navigation_transitions.dart';
 import '../services/geofence/geofence_service.dart';
 import '../services/geofence/location_tracker.dart';
+import '../services/geofence/travel_tracker.dart';
 import '../services/notifications/appointment_reminder_service.dart';
 import '../services/queue/queue_service.dart';
 import '../state/app_session.dart';
@@ -12,13 +14,15 @@ import '../widgets/smartcare_dashboard_header.dart';
 import '../widgets/smartcare_bottom_nav.dart';
 import 'serving.dart';
 
-/// "Good morning, Dr. Juan" when the logged-in doctor's first name is known,
-/// falling back to "Good morning, Doctor" otherwise.
+/// "Good morning, Dr. Juan" (or afternoon/evening, by the time of day)
+/// when the logged-in doctor's first name is known, falling back to
+/// "Good morning, Doctor" otherwise.
 String _greetingTitle({required String prefix, required String roleLabel}) {
   final firstName = SmartCareSession.currentUserFirstName;
+  final greeting = timeOfDayGreeting();
   return (firstName != null && firstName.isNotEmpty)
-      ? "Good morning, $prefix $firstName"
-      : "Good morning, $roleLabel";
+      ? "$greeting, $prefix $firstName"
+      : "$greeting, $roleLabel";
 }
 
 class DoctorDashboardScreen extends StatefulWidget {
@@ -36,16 +40,36 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   bool _isLoadingQueue = true;
   int _totalBookedCount = 0;
 
+  /// Refreshes the queue every 15 seconds, so a patient the secretary
+  /// just sent in shows up without the doctor having to reopen the tab.
+  Timer? _queueRefreshTimer;
+
+  /* Today's Consultations only lists the patients the secretary has sent
+  to the doctor, plus the one the doctor is seeing now, so the doctor
+  sees who is actually ready for them instead of everyone booked today.
+  The stat cards above still count the whole day. */
+  List<Map<String, dynamic>> get _consultations => _queue
+      .where((p) => p['status'] == 'sent_to_doctor' || p['status'] == 'serving')
+      .toList();
+
   @override
   void initState() {
     super.initState();
     SmartCareSession.switchRole(UserRole.doctor);
     _loadQueue();
+    _queueRefreshTimer = Timer.periodic(
+      const Duration(seconds: 15),
+      (_) => _loadQueue(showSpinner: false),
+    );
     _loadTotalBooked();
     _loadAvailability();
     final userId = SmartCareSession.currentUserId;
     if (userId != null) {
       AppointmentReminderService.syncAndShowNewNotifications(userId);
+      // The ETA keeps reporting in TravelTracker even while this screen is
+      // closed; this only restores it after an app restart and refreshes
+      // the ETA right away when the doctor comes back to this tab.
+      unawaited(TravelTracker.instance.restore(userId));
     }
   }
 
@@ -65,8 +89,14 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
     }
   }
 
-  Future<void> _loadQueue() async {
-    setState(() => _isLoadingQueue = true);
+  @override
+  void dispose() {
+    _queueRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadQueue({bool showSpinner = true}) async {
+    if (showSpinner) setState(() => _isLoadingQueue = true);
     try {
       final queue = await QueueService.getTodayQueue();
       if (!mounted) return;
@@ -138,6 +168,67 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
     }
   }
 
+  /// Opens the "Choose Your Destination" sheet and keeps the clinic the
+  /// doctor picked.
+  Future<void> _chooseTravelDestination() async {
+    final current = TravelTracker.instance.destination.value;
+    if (current != null) {
+      final confirmed = await _confirmTravelAction(
+        context,
+        title: "Change clinic?",
+        message:
+            "You're currently heading to $current Clinic. "
+            "Do you want to choose a different clinic?",
+        confirmLabel: "Change",
+      );
+      if (!confirmed || !mounted) return;
+    }
+
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _ChooseDestinationSheet(selected: current),
+    );
+    if (picked == null || !mounted) return;
+
+    final userId = SmartCareSession.currentUserId;
+    if (userId == null) return;
+    try {
+      await TravelTracker.instance.setDestination(userId, picked);
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage(e.toString().replaceFirst('Exception: ', ''));
+      return;
+    }
+    if (!mounted) return;
+    _showMessage("Heading to $picked Clinic.");
+  }
+
+  Future<void> _clearTravelDestination() async {
+    final confirmed = await _confirmTravelAction(
+      context,
+      title: "Clear destination?",
+      message:
+          "You will no longer be marked as heading to "
+          "${TravelTracker.instance.destination.value} Clinic.",
+      confirmLabel: "Clear",
+    );
+    if (!confirmed || !mounted) return;
+
+    final userId = SmartCareSession.currentUserId;
+    if (userId == null) return;
+    try {
+      await TravelTracker.instance.clear(userId);
+    } catch (e) {
+      if (!mounted) return;
+      _showMessage(e.toString().replaceFirst('Exception: ', ''));
+      return;
+    }
+    if (!mounted) return;
+    _showMessage("Destination cleared.");
+  }
+
   void _toggleShowAllConsultations() {
     setState(() {
       _showAllConsultations = !_showAllConsultations;
@@ -152,12 +243,15 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
         .toUpperCase();
   }
 
+  /// The queue number being served, out of how many queue numbers that
+  /// clinic has given out today, like SO2/5.
   String get _nowServingValue {
     final serving = _queue.where((p) => p['status'] == 'serving');
     if (serving.isEmpty) return "--";
-    final ref = serving.first['reference_no'] as String? ?? '';
-    if (ref.length < 2) return "--";
-    return "#${ref.substring(ref.length - 2)}";
+    return nowServingLabel(
+      serving.first,
+      (serving.first['session_total'] as num?)?.toInt(),
+    );
   }
 
   String _statusLabel(String status) {
@@ -168,6 +262,8 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
         return 'With Doctor';
       case 'completed':
         return 'Completed';
+      case 'no_show':
+        return 'No-Show';
       default:
         return 'Waiting';
     }
@@ -183,13 +279,12 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   }
 
   void _openConsultation(BuildContext context, Map<String, dynamic> patient) {
-    final waitingList = _queue
-        .where((p) => p['appointment_id'] != patient['appointment_id'])
+    final waitingList = waitingInLine(_queue, patient)
         .map(
           (p) => {
             'initials': _initialsFor(p['patient_name'] as String),
             'name': p['patient_name'] as String,
-            'time': p['time_slot'] as String,
+            'time': appointmentQueueLabel(p),
           },
         )
         .toList();
@@ -200,12 +295,13 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
             transition: SmartCareTransition.subPage,
             builder: (context) => ServingScreen(
               appointmentId: patient['appointment_id'] as int,
-              patientUserId: patient['user_id'] as int,
+              patientUserId: patient['user_id'] as int?,
               patientName: patient['patient_name'] as String,
               referenceNo: patient['reference_no'] as String? ?? '',
-              timeSlot: patient['time_slot'] as String,
+              queueLabel: appointmentQueueLabel(patient),
               location: patient['location'] as String,
               status: patient['status'] as String,
+              scheduleDate: patient['schedule_date'] as String?,
               waitingPatients: waitingList,
             ),
           ),
@@ -224,10 +320,29 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
       animation: Listenable.merge([
         LocationTracker.instance.isTracking,
         LocationTracker.instance.insideLocations,
+        LocationTracker.instance.distances,
+        TravelTracker.instance.destination,
+        TravelTracker.instance.eta,
+        TravelTracker.instance.isLoadingEta,
+        TravelTracker.instance.arrivedAt,
       ]),
       builder: (context, _) {
         final liveTracking = LocationTracker.instance.isTracking.value;
         final liveInside = LocationTracker.instance.insideLocations.value;
+
+        // Live tracking keeps distances fresh on its own; otherwise fall
+        // back to the reading TravelTracker took on its last report.
+        final destination = TravelTracker.instance.destination.value;
+        final eta = TravelTracker.instance.eta.value;
+        final travelDistance = destination == null
+            ? null
+            : liveTracking
+            ? LocationTracker.instance.distances.value[destination]
+            : eta.localDistanceMeters;
+        final hasArrived =
+            destination != null &&
+            liveTracking &&
+            liveInside.contains(destination);
 
         final currentLocation = liveTracking
             ? (liveInside.isEmpty ? null : liveInside.first)
@@ -248,6 +363,21 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
               isAvailable: _isInClinic,
               isActuallyInClinic: isActuallyInClinic,
               onToggle: _toggleClinicStatus,
+            ),
+            const SizedBox(height: 16),
+            const _SectionTitle("Doctor Travel"),
+            const SizedBox(height: 12),
+            _DoctorTravelCard(
+              destination: destination,
+              distanceMeters: travelDistance,
+              serverEtaMinutes: eta.etaMinutes,
+              serverDistanceMeters: eta.distanceMeters,
+              hasArrived: hasArrived,
+              arrivedAt: TravelTracker.instance.arrivedAt.value,
+              isLoadingEta: TravelTracker.instance.isLoadingEta.value,
+              onRefreshEta: TravelTracker.instance.refresh,
+              onChoose: _chooseTravelDestination,
+              onClear: _clearTravelDestination,
             ),
           ],
         );
@@ -354,7 +484,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                                   ),
                                 ),
                               )
-                            else if (_queue.isEmpty)
+                            else if (_consultations.isEmpty)
                               Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.all(20),
@@ -366,7 +496,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Text(
-                                  "No patients scheduled today.",
+                                  "No patients sent to you yet.",
                                   textAlign: TextAlign.center,
                                   style: TextStyle(color: Color(0xFF506D54)),
                                 ),
@@ -375,8 +505,8 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                               _ConsultationsCard(
                                 children:
                                     (_showAllConsultations
-                                            ? _queue
-                                            : _queue.take(3).toList())
+                                            ? _consultations
+                                            : _consultations.take(3).toList())
                                         .map((consultation) {
                                           final name =
                                               consultation['patient_name']
@@ -385,7 +515,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                                             initials: _initialsFor(name),
                                             name: name,
                                             detail:
-                                                "${consultation['time_slot']} • "
+                                                "${appointmentQueueLabel(consultation)} • "
                                                 "${_statusLabel(consultation['status'] as String)}",
                                             isActive:
                                                 consultation['status'] ==
@@ -524,6 +654,458 @@ class _DoctorStatusBanner extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Short address shown under each clinic name in the destination sheet.
+const Map<String, String> _clinicAddresses = {
+  'Sta. Rita': '100 C Mariano, San Vicente',
+  'Guagua': 'RMC Medical Arts Annex 1, Room 102',
+  'Lubao': 'J.P. Rizal St., Sta. Cruz',
+};
+
+/// Asks the doctor to confirm a Doctor Travel action.
+/// Returns true only when they tap the confirm button.
+Future<bool> _confirmTravelAction(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required String confirmLabel,
+}) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: const Text("Cancel"),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF006B2D),
+            foregroundColor: Colors.white,
+          ),
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: Text(confirmLabel),
+        ),
+      ],
+    ),
+  );
+  return confirmed == true;
+}
+
+/* GPS only gives the straight-line distance to the clinic, but roads are
+never perfectly straight, so the distance is multiplied by 1.3 to roughly
+match the actual road distance. The travel time then assumes an average
+speed of 40 km/h on Pampanga roads. This is only an estimate, which is
+why the card shows "~" before the time. */
+const double _roadDistanceFactor = 1.3;
+const double _averageSpeedKmh = 40;
+
+String _formatEta(double straightLineMeters) {
+  final roadKm = straightLineMeters * _roadDistanceFactor / 1000;
+  final minutes = (roadKm / _averageSpeedKmh * 60).round();
+  if (minutes < 1) return "less than 1 min";
+  if (minutes < 60) return "$minutes min";
+  final hours = minutes ~/ 60;
+  final remaining = minutes % 60;
+  return remaining == 0 ? "$hours hr" : "$hours hr $remaining min";
+}
+
+String _formatDistance(double meters) {
+  return meters < 1000
+      ? "${meters.round()} m"
+      : "${(meters / 1000).toStringAsFixed(1)} km";
+}
+
+class _DoctorTravelCard extends StatelessWidget {
+  const _DoctorTravelCard({
+    required this.destination,
+    required this.distanceMeters,
+    required this.serverEtaMinutes,
+    required this.serverDistanceMeters,
+    required this.hasArrived,
+    required this.arrivedAt,
+    required this.isLoadingEta,
+    required this.onRefreshEta,
+    required this.onChoose,
+    required this.onClear,
+  });
+
+  final String? destination;
+  final double? distanceMeters;
+
+  /// The backend's driving ETA, the same one patients see. Preferred over
+  /// the local guess from [distanceMeters] whenever it is available.
+  final int? serverEtaMinutes;
+  final int? serverDistanceMeters;
+  final bool hasArrived;
+
+  /// The clinic the doctor just arrived at after his destination was
+  /// cleared, shown in place of "Select your destination clinic".
+  final String? arrivedAt;
+  final bool isLoadingEta;
+  final VoidCallback? onRefreshEta;
+  final VoidCallback onChoose;
+  final VoidCallback onClear;
+
+  Widget _buildEtaRow() {
+    final String text;
+    if (hasArrived) {
+      text = "You've arrived";
+    } else if (isLoadingEta) {
+      text = "Calculating ETA...";
+    } else if (serverEtaMinutes != null && serverDistanceMeters != null) {
+      final minutes = serverEtaMinutes!;
+      final eta = minutes < 60
+          ? "$minutes min"
+          : minutes % 60 == 0
+          ? "${minutes ~/ 60} hr"
+          : "${minutes ~/ 60} hr ${minutes % 60} min";
+      text =
+          "ETA: ~$eta "
+          "(${_formatDistance(serverDistanceMeters!.toDouble())} away)";
+    } else if (distanceMeters == null) {
+      text = "ETA unavailable - turn on location";
+    } else {
+      text =
+          "ETA: ~${_formatEta(distanceMeters!)} "
+          "(${_formatDistance(distanceMeters!)} away)";
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE5F4E6),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            hasArrived ? Icons.check_circle : Icons.schedule,
+            color: const Color(0xFF16751F),
+            size: 16,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Color(0xFF16751F),
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          if (onRefreshEta != null && !isLoadingEta && !hasArrived)
+            InkWell(
+              onTap: onRefreshEta,
+              borderRadius: BorderRadius.circular(12),
+              child: const Padding(
+                padding: EdgeInsets.all(2),
+                child: Icon(Icons.refresh, color: Color(0xFF16751F), size: 18),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasDestination = destination != null;
+    final justArrived = !hasDestination && arrivedAt != null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFD2E7D1)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: const Color(0xFFDDF6DD),
+                child: Icon(
+                  justArrived ? Icons.check_circle : Icons.directions_car,
+                  color: const Color(0xFF16751F),
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      hasDestination
+                          ? "Heading to $destination Clinic"
+                          : justArrived
+                          ? "You've arrived at $arrivedAt Clinic"
+                          : "Select your destination clinic",
+                      style: const TextStyle(
+                        color: Color(0xFF1A3320),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      hasDestination
+                          ? _clinicAddresses[destination] ?? ''
+                          : justArrived
+                          ? "Patients with appointments here today were notified."
+                          : "Let us know which clinic you're going to today.",
+                      style: const TextStyle(
+                        color: Color(0xFF506D54),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (hasDestination)
+                IconButton(
+                  onPressed: onClear,
+                  icon: const Icon(
+                    Icons.close,
+                    color: Color(0xFF879188),
+                    size: 20,
+                  ),
+                  tooltip: "Clear destination",
+                ),
+            ],
+          ),
+          if (hasDestination) ...[const SizedBox(height: 10), _buildEtaRow()],
+          const SizedBox(height: 8),
+          const Divider(height: 1, color: Color(0xFFE3EFE1)),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 40,
+            child: ElevatedButton.icon(
+              onPressed: onChoose,
+              icon: const Icon(Icons.location_on, size: 18),
+              label: Text(hasDestination ? "Change Clinic" : "Choose Clinic"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF16751F),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                textStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bottom sheet listing every clinic with a "Go to this Clinic" button.
+/// Pops with the chosen clinic's name.
+class _ChooseDestinationSheet extends StatelessWidget {
+  const _ChooseDestinationSheet({required this.selected});
+
+  final String? selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFF4FAF2),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        10,
+        16,
+        16 + MediaQuery.paddingOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFC9DCC8),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            "Choose Your Destination",
+            style: TextStyle(
+              color: Color(0xFF16751F),
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            "Where are you going today?",
+            style: TextStyle(color: Color(0xFF506D54), fontSize: 12),
+          ),
+          const SizedBox(height: 14),
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  for (final clinic in clinicLocations) ...[
+                    _DestinationTile(
+                      clinic: clinic,
+                      address: _clinicAddresses[clinic] ?? '',
+                      isSelected: clinic == selected,
+                      onGo: () async {
+                        final confirmed = await _confirmTravelAction(
+                          context,
+                          title: "Go to $clinic Clinic?",
+                          message:
+                              "You will be marked as heading to $clinic "
+                              "Clinic (${_clinicAddresses[clinic] ?? ''}).",
+                          confirmLabel: "Confirm",
+                        );
+                        if (!confirmed || !context.mounted) return;
+                        Navigator.of(context).pop(clinic);
+                      },
+                    ),
+                    if (clinic != clinicLocations.last)
+                      const SizedBox(height: 10),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DestinationTile extends StatelessWidget {
+  const _DestinationTile({
+    required this.clinic,
+    required this.address,
+    required this.isSelected,
+    required this.onGo,
+  });
+
+  final String clinic;
+  final String address;
+  final bool isSelected;
+  final VoidCallback onGo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+          color: isSelected ? const Color(0xFF16751F) : const Color(0xFFD2E7D1),
+          width: isSelected ? 1.5 : 1,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5F4E6),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.location_on_outlined,
+                  color: Color(0xFF16751F),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "$clinic Clinic",
+                      style: const TextStyle(
+                        color: Color(0xFF1A3320),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      address,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF506D54),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isSelected)
+                const Icon(
+                  Icons.check_circle,
+                  color: Color(0xFF16751F),
+                  size: 20,
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 38,
+            child: ElevatedButton(
+              onPressed: onGo,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isSelected
+                    ? const Color(0xFF16751F)
+                    : const Color(0xFFE5F4E6),
+                foregroundColor: isSelected
+                    ? Colors.white
+                    : const Color(0xFF16751F),
+                elevation: 0,
+                textStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: const Text("Go to this Clinic"),
+            ),
           ),
         ],
       ),
@@ -927,14 +1509,19 @@ class _DashboardStat extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF16751F),
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                // Shrinks long values like "SO12/30" to fit instead of
+                // cutting them off.
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: Color(0xFF16751F),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Text(

@@ -1,17 +1,44 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
 import '../api_config.dart';
 
-class DoctorLocationStatus {
-  const DoctorLocationStatus({
+enum ClinicPresence { inClinic, onTheWay, notInClinic }
+
+/// What patients see for one clinic on the Doctor Availability card.
+/// [etaMinutes] and [distanceKm] are only set when [presence] is
+/// [ClinicPresence.onTheWay].
+class ClinicAvailability {
+  const ClinicAvailability({
     required this.location,
-    required this.doctorName,
+    required this.presence,
+    this.etaMinutes,
+    this.distanceKm,
   });
 
   final String location;
+  final ClinicPresence presence;
+  final int? etaMinutes;
+  final double? distanceKm;
+
+  factory ClinicAvailability.fromJson(Map<String, dynamic> json) {
+    return ClinicAvailability(
+      location: json['location'] as String,
+      presence: switch (json['status']) {
+        'in_clinic' => ClinicPresence.inClinic,
+        'on_the_way' => ClinicPresence.onTheWay,
+        _ => ClinicPresence.notInClinic,
+      },
+      etaMinutes: (json['eta_minutes'] as num?)?.toInt(),
+      distanceKm: (json['distance_km'] as num?)?.toDouble(),
+    );
+  }
+}
+
+class DoctorAvailability {
+  const DoctorAvailability({required this.doctorName, required this.clinics});
+
   final String doctorName;
+  final Map<String, ClinicAvailability> clinics;
 }
 
 class DoctorAccount {
@@ -32,7 +59,7 @@ class GeofenceService {
       '${ApiConfig.baseUrl}/api/ai_geofence/get_doctor_account.php',
     );
 
-    final response = await http.post(uri);
+    final response = await ApiConfig.post(uri);
 
     final Map<String, dynamic> body = jsonDecode(response.body);
     if (response.statusCode != 200 || body['success'] != true) {
@@ -55,9 +82,8 @@ class GeofenceService {
       '${ApiConfig.baseUrl}/api/ai_geofence/get_availability.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 
@@ -120,9 +146,8 @@ class GeofenceService {
       '${ApiConfig.baseUrl}/api/ai_geofence/get_tracking_status.php',
     );
 
-    final response = await http.post(
+    final response = await ApiConfig.post(
       uri,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'user_id': userId}),
     );
 
@@ -157,28 +182,125 @@ class GeofenceService {
     });
   }
 
-  /// Returns every clinic location that currently has an available doctor
-  /// physically inside its geofence.
-  static Future<List<DoctorLocationStatus>> getStatus() async {
+  /* This sends the doctor's current GPS position to the backend. The
+  tracking phone calls this every 2 minutes, and the backend uses it to
+  work out which clinic the doctor is heading to and refresh the ETA
+  patients see on the Doctor Availability card. */
+  static Future<void> updatePosition({
+    required int userId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    await _post('update_position.php', {
+      'user_id': userId,
+      'latitude': latitude,
+      'longitude': longitude,
+    });
+  }
+
+  /* This saves the clinic the doctor picked on the Doctor Travel card
+  (or clears it when destination is null). The backend then uses this
+  clinic for the "On the way" ETA patients see, instead of guessing from
+  today's clinic schedule. */
+  static Future<void> setTravelDestination({
+    required int userId,
+    required String? destination,
+  }) async {
+    await _post('set_travel_destination.php', {
+      'user_id': userId,
+      'destination': destination,
+    });
+  }
+
+  /// Returns the clinic the doctor last picked on the Doctor Travel card,
+  /// or null if none, so the card survives an app restart.
+  static Future<String?> getMyTravelDestination(int userId) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/ai_geofence/get_availability.php',
+    );
+
+    final response = await ApiConfig.post(
+      uri,
+      body: jsonEncode({'user_id': userId}),
+    );
+
+    final Map<String, dynamic> body = jsonDecode(response.body);
+    if (response.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to load travel destination.');
+    }
+
+    return body['travel_destination'] as String?;
+  }
+
+  /* Same as updatePosition, but also gives back the ETA the backend
+  computed, so the doctor's Doctor Travel card shows exactly the same ETA
+  patients see. Both values are null when the backend has no ETA (for
+  example the doctor is unavailable or already inside the clinic).
+  arrivedAt is the clinic name when this position was inside the clinic
+  the doctor was heading to; the backend has then already marked him as
+  arrived, cleared his destination, and notified today's patients.
+  currentLocation is the clinic the backend has the doctor marked inside
+  after this report, or null once he has left it. */
+  static Future<
+    ({
+      int? etaMinutes,
+      int? distanceMeters,
+      String? arrivedAt,
+      String? currentLocation,
+    })
+  >
+  reportTravelPosition({
+    required int userId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/ai_geofence/update_position.php',
+    );
+
+    final response = await ApiConfig.post(
+      uri,
+      body: jsonEncode({
+        'user_id': userId,
+        'latitude': latitude,
+        'longitude': longitude,
+      }),
+    );
+
+    final Map<String, dynamic> body = jsonDecode(response.body);
+    if (response.statusCode != 200 || body['success'] != true) {
+      throw Exception(body['message'] ?? 'Failed to report position.');
+    }
+
+    return (
+      etaMinutes: (body['eta_minutes'] as num?)?.toInt(),
+      distanceMeters: (body['eta_distance_m'] as num?)?.toInt(),
+      arrivedAt: body['arrived'] == true ? body['arrived_at'] as String? : null,
+      currentLocation: body['current_location'] as String?,
+    );
+  }
+
+  /// Returns the doctor's status at every clinic: in clinic, on the way
+  /// (with ETA), or not in clinic.
+  static Future<DoctorAvailability> getStatus() async {
     final uri = Uri.parse(
       '${ApiConfig.baseUrl}/api/ai_geofence/get_status.php',
     );
 
-    final response = await http.post(uri);
+    final response = await ApiConfig.post(uri);
 
     final Map<String, dynamic> body = jsonDecode(response.body);
     if (response.statusCode != 200 || body['success'] != true) {
       throw Exception(body['message'] ?? 'Failed to load doctor status.');
     }
 
-    return (body['locations'] as List)
-        .map(
-          (entry) => DoctorLocationStatus(
-            location: entry['location'] as String,
-            doctorName: entry['doctor_name'] as String,
-          ),
-        )
-        .toList();
+    final clinics = (body['clinics'] as List).map(
+      (entry) => ClinicAvailability.fromJson(entry as Map<String, dynamic>),
+    );
+    return DoctorAvailability(
+      doctorName: body['doctor_name'] as String,
+      clinics: {for (final clinic in clinics) clinic.location: clinic},
+    );
   }
 
   /// Returns each clinic's persisted target latitude/longitude.
@@ -187,7 +309,7 @@ class GeofenceService {
       '${ApiConfig.baseUrl}/api/ai_geofence/get_clinic_coordinates.php',
     );
 
-    final response = await http.post(uri);
+    final response = await ApiConfig.post(uri);
 
     final Map<String, dynamic> body = jsonDecode(response.body);
     if (response.statusCode != 200 || body['success'] != true) {
@@ -221,11 +343,7 @@ class GeofenceService {
   static Future<void> _post(String endpoint, Map<String, dynamic> body) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/ai_geofence/$endpoint');
 
-    final response = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
+    final response = await ApiConfig.post(uri, body: jsonEncode(body));
 
     final Map<String, dynamic> decoded = jsonDecode(response.body);
     if (response.statusCode != 200 || decoded['success'] != true) {

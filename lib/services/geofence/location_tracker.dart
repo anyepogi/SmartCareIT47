@@ -11,6 +11,41 @@ import 'geofence_service.dart';
 /// this many meters of the clinic's target coordinates.
 const double geofenceRadiusMeters = 200;
 
+/// How often the doctor's position is sent to the backend so the ETA
+/// patients see stays up to date.
+const Duration etaReportInterval = Duration(minutes: 2);
+
+/* The GPS settings for the doctor's tracking (this file and
+travel_tracker.dart). On Android they start a foreground service: a
+notification that stays while tracking, which tells Android not to put
+the app to sleep. Without it, Android stops the GPS and the 1 minute
+reports a few minutes after the doctor minimizes the app (for example to
+open Waze), and patients lose the ETA. The notification goes away when
+tracking stops. Both trackers must use these same settings, because on
+Android the plugin shares one GPS stream, and whichever tracker starts
+first decides its settings. */
+LocationSettings doctorTrackingLocationSettings() {
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+    return AndroidSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 5,
+      intervalDuration: const Duration(seconds: 30),
+      foregroundNotificationConfig: const ForegroundNotificationConfig(
+        notificationTitle: 'SmartCare',
+        notificationText:
+            "Location tracking is on so patients can see the doctor's ETA.",
+        notificationChannelName: 'Doctor location tracking',
+        enableWakeLock: true,
+        setOngoing: true,
+      ),
+    );
+  }
+  return const LocationSettings(
+    accuracy: LocationAccuracy.high,
+    distanceFilter: 5,
+  );
+}
+
 /* This class watches the doctor's live GPS position and compares it to
 each clinic's location, to know if the doctor is physically inside a
 clinic or not. There is only ever one of this class in the whole app
@@ -106,6 +141,13 @@ class LocationTracker {
   Map<String, (double, double)> _targets = {};
   int? _userId;
 
+  /// Sends the latest position every [etaReportInterval] for the ETA.
+  /// Uses a timer instead of the position stream because the stream only
+  /// fires when the doctor moves, and the ETA should refresh even while
+  /// he is stuck in traffic.
+  Timer? _etaTimer;
+  Position? _lastPosition;
+
   /* This turns on GPS tracking for the doctor. It first checks if the
   app has permission to use the phone's location, and asks for it if
   not. It also checks if location services (GPS) are turned on in the
@@ -154,16 +196,48 @@ class LocationTracker {
 
     _subscription =
         Geolocator.getPositionStream(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.high,
-            distanceFilter: 5,
-          ),
+          locationSettings: doctorTrackingLocationSettings(),
         ).listen(
           _handlePosition,
           onError: (Object error) {
             locationError.value = 'Location tracking error: $error';
           },
         );
+
+    _etaTimer?.cancel();
+    _etaTimer = Timer.periodic(etaReportInterval, (_) => _reportPosition());
+    unawaited(_reportPosition());
+  }
+
+  /* This asks the GPS for a fresh position, runs the geofence check with
+  it, and sends it to the backend so it can refresh the ETA patients
+  see. A fresh reading is needed here because the GPS stream only fires
+  when the doctor moves: if its first reading was inaccurate (for
+  example a rough Wi-Fi fix kilometers away) and the doctor then stood
+  still inside the clinic, the geofence used to stay stuck on that old
+  reading and never detected him inside. The last stream position is
+  only used if the GPS can't give a fresh one. */
+  Future<void> _reportPosition() async {
+    final userId = _userId;
+    if (userId == null || !isTracking.value) return;
+    try {
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition();
+        checkPosition(position);
+      } catch (_) {
+        position = _lastPosition;
+      }
+      if (position == null) return;
+      await GeofenceService.updatePosition(
+        userId: userId,
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
+    } catch (_) {
+      // Best-effort — the next 2 minute tick will try again, and the
+      // backend hides an ETA that has not been refreshed for a while.
+    }
   }
 
   // Position updates can arrive faster than the backend round-trip for a
@@ -176,6 +250,15 @@ class LocationTracker {
   // is processed next (superseded ones are dropped, not queued up).
   Position? _pendingPosition;
   bool _isApplyingPosition = false;
+
+  /// Runs the geofence check with a position taken somewhere else (for
+  /// example TravelTracker's fresh reading), so the geofence doesn't have
+  /// to wait for the GPS stream to report movement. Does nothing if
+  /// tracking is off.
+  void checkPosition(Position position) {
+    if (!isTracking.value || _userId == null) return;
+    _handlePosition(position);
+  }
 
   void _handlePosition(Position position) {
     _pendingPosition = position;
@@ -209,6 +292,7 @@ class LocationTracker {
   Future<void> _applyPosition(Position position) async {
     final userId = _userId;
     if (userId == null) return;
+    _lastPosition = position;
 
     final newDistances = Map<String, double?>.from(distances.value);
     final newInside = Set<String>.from(insideLocations.value);
@@ -274,6 +358,9 @@ class LocationTracker {
     await _subscription?.cancel();
     _subscription = null;
     _pendingPosition = null;
+    _etaTimer?.cancel();
+    _etaTimer = null;
+    _lastPosition = null;
 
     // Wait for any in-flight position update to finish reporting before
     // sending the exit calls below, so they can't race and get
@@ -347,6 +434,10 @@ class LocationTracker {
       final position = await Geolocator.getCurrentPosition();
       insideLocations.value = {};
       await _applyPosition(position);
+      // Also refresh the ETA right away, so patients see "On the way"
+      // as soon as the doctor turns Available on instead of waiting for
+      // the next 2 minute tick.
+      await _reportPosition();
     } catch (_) {
       // Best-effort — the position stream will eventually catch up too.
     }
