@@ -12,6 +12,8 @@ class ApiConfig {
     if (_buildBaseUrl.isNotEmpty) return _buildBaseUrl;
 
     return 'https://smartcare-ccs.com';
+
+    ///return 'http://10.0.2.2/smartcare.1';
   }
 
   /// Login token from sign in, sent as X-Auth-Token on every request.

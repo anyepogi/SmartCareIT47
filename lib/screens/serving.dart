@@ -6,18 +6,7 @@ import '../services/notifications/notification_service.dart';
 import '../services/queue/queue_service.dart';
 import '../state/app_session.dart';
 import '../widgets/cancel_reason_dialog.dart';
-import '../widgets/smartcare_date_picker.dart';
-
-/// Returns [from] if it's a valid clinic day for [location], otherwise the
-/// nearest later valid day (searching up to two weeks out).
-DateTime _nearestValidDate(String location, DateTime from) {
-  var day = from;
-  for (var i = 0; i < 14; i++) {
-    if (isDateValidForLocation(location, day)) return day;
-    day = day.add(const Duration(days: 1));
-  }
-  return from;
-}
+import 'staff_schedule_picker.dart';
 
 class ServingScreen extends StatefulWidget {
   const ServingScreen({
@@ -176,55 +165,21 @@ class _ServingScreenState extends State<ServingScreen> {
     if (wantsFollowUp) {
       if (!mounted) return;
       // Same as a regular booking, the follow-up can be at any clinic —
-      // not necessarily the one this visit happened at.
-      followUpLocation = await showDialog<String>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text("Follow-up Clinic"),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: clinicLocations.map((location) {
-                return ChoiceChip(
-                  label: Text(location, style: const TextStyle(fontSize: 12)),
-                  selected: location == widget.location,
-                  onSelected: (_) => Navigator.pop(dialogContext, location),
-                );
-              }).toList(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text("Back"),
-            ),
-          ],
-        ),
+      // not necessarily the one this visit happened at. There is no time
+      // to pick: the follow-up gets the next queue number for that day.
+      final choice = await showStaffSchedulePicker(
+        context,
+        title: "Set Follow-up Date",
+        confirmLabel: "Confirm Follow-up",
+        initialLocation: widget.location,
+        initialDate: DateTime.now().add(const Duration(days: 7)),
+        monthsAhead: 12,
       );
-      // If they backed out of the location picker, don't complete at all —
-      // they can tap Mark Complete again to retry.
-      if (followUpLocation == null) return;
-
-      if (!mounted) return;
-      followUpDate = await showDatePicker(
-        context: context,
-        builder: smartCareDatePickerBuilder,
-        initialDate: _nearestValidDate(
-          followUpLocation,
-          DateTime.now().add(const Duration(days: 7)),
-        ),
-        firstDate: DateTime.now(),
-        lastDate: DateTime.now().add(const Duration(days: 365)),
-        helpText: "Set a follow-up date",
-        selectableDayPredicate: (day) =>
-            isDateValidForLocation(followUpLocation!, day),
-      );
-      // If they backed out of the date picker, don't complete at all —
-      // they can tap Mark Complete again to retry. There is no time to
-      // pick: the follow-up gets the next queue number for that day.
-      if (followUpDate == null) return;
+      // If they backed out, don't complete at all — they can tap Mark
+      // Complete again to retry.
+      if (choice == null) return;
+      followUpLocation = choice.location;
+      followUpDate = choice.date;
     }
     if (!mounted) return;
     if (_isWorking) return;
@@ -327,27 +282,33 @@ class _ServingScreenState extends State<ServingScreen> {
     }
   }
 
-  /* Moves the patient's appointment to another day at the same clinic,
-  where it gets the next queue number. The backend books the new one first
-  and only then cancels this one, so a failed booking never leaves the
-  patient without an appointment. Only shown for patients with an app
-  account (walk-ins can simply be cancelled and recorded again). */
+  /* Moves the patient's appointment to another clinic and/or day, where it
+  gets the next queue number. The backend books the new one first and only
+  then cancels this one, so a failed booking never leaves the patient
+  without an appointment. Only shown for patients with an app account
+  (walk-ins can simply be cancelled and recorded again). */
   Future<void> _reschedule() async {
     final userId = widget.patientUserId;
     if (userId == null) return;
-    final date = await showDialog<DateTime>(
-      context: context,
-      builder: (dialogContext) => _RescheduleDialog(location: widget.location),
+    final choice = await showStaffSchedulePicker(
+      context,
+      title: "Reschedule Appointment",
+      confirmLabel: "Confirm Reschedule",
+      initialLocation: widget.location,
+      monthsAhead: 5,
+      excludeAppointmentId: widget.appointmentId,
     );
-    if (date == null) return;
+    if (choice == null) return;
 
+    final date = choice.date;
+    final location = choice.location;
     final dateKey =
         "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
 
     await _run(() async {
       final booking = await AppointmentService.book(
         userId: userId,
-        location: widget.location,
+        location: location,
         date: dateKey,
         rescheduleAppointmentId: widget.appointmentId,
       );
@@ -356,7 +317,7 @@ class _ServingScreenState extends State<ServingScreen> {
         title: "Appointment Rescheduled",
         message:
             "Your appointment was rescheduled to $dateKey at "
-            "${widget.location} (${sessionTimeLabel(widget.location) ?? ''}) "
+            "$location (${sessionTimeLabel(location) ?? ''}) "
             "by the clinic. Your new queue number is ${booking.queueCode}.",
         type: "Alerts",
         targetRoute: "/appointment",
@@ -904,188 +865,6 @@ class _ActionButton extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-const int _rescheduleVisibleMonthCount = 5;
-
-class _MonthOption {
-  const _MonthOption(this.year, this.month);
-
-  final int year;
-  final int month;
-
-  static const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
-  String get label => monthNames[month - 1];
-
-  bool isSameMonth(DateTime date) => year == date.year && month == date.month;
-}
-
-/* Lets staff pick a new date at the same clinic for a patient's
-appointment. There is no time to pick: the moved appointment gets the
-next queue number for that day. Returns the chosen date. */
-class _RescheduleDialog extends StatefulWidget {
-  const _RescheduleDialog({required this.location});
-
-  final String location;
-
-  @override
-  State<_RescheduleDialog> createState() => _RescheduleDialogState();
-}
-
-class _RescheduleDialogState extends State<_RescheduleDialog> {
-  late final DateTime _today;
-  late final List<_MonthOption> _months;
-  late DateTime _selectedDate;
-
-  @override
-  void initState() {
-    super.initState();
-    final now = DateTime.now();
-    _today = DateTime(now.year, now.month, now.day);
-    _months = List.generate(_rescheduleVisibleMonthCount, (index) {
-      final monthDate = DateTime(_today.year, _today.month + index);
-      return _MonthOption(monthDate.year, monthDate.month);
-    });
-    _selectedDate = _firstSelectableDateForMonth(_months.first);
-  }
-
-  /// Whether [date] can be booked: a clinic day for [widget.location], and
-  /// if it is today, its session has not ended yet.
-  bool _isBookable(DateTime date) =>
-      isDateValidForLocation(widget.location, date) &&
-      !(date == _today && isSessionOver(widget.location, date));
-
-  /// Returns the earliest bookable day of [month] that's not before today.
-  DateTime _firstSelectableDateForMonth(_MonthOption month) {
-    final days = _daysForMonth(month);
-    if (days.isNotEmpty) return days.first;
-    return month.isSameMonth(_today)
-        ? _today
-        : DateTime(month.year, month.month);
-  }
-
-  List<DateTime> _daysForMonth(_MonthOption month) {
-    final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
-    final startDay = month.isSameMonth(_today) ? _today.day : 1;
-    final days = <DateTime>[];
-    for (var d = startDay; d <= daysInMonth; d++) {
-      final date = DateTime(month.year, month.month, d);
-      if (_isBookable(date)) {
-        days.add(date);
-      }
-    }
-    return days;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final days = _daysForMonth(
-      _months.firstWhere((m) => m.isSameMonth(_selectedDate)),
-    );
-
-    return AlertDialog(
-      title: const Text("Reschedule Appointment"),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Month",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-            ),
-            const SizedBox(height: 6),
-            SizedBox(
-              height: 36,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: _months.map((month) {
-                  final selected = month.isSameMonth(_selectedDate);
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(
-                        month.label,
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      selected: selected,
-                      onSelected: (_) {
-                        setState(() {
-                          _selectedDate = _firstSelectableDateForMonth(month);
-                        });
-                      },
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              "Day",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-            ),
-            const SizedBox(height: 6),
-            SizedBox(
-              height: 44,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: days.map((day) {
-                  final selected =
-                      day.year == _selectedDate.year &&
-                      day.month == _selectedDate.month &&
-                      day.day == _selectedDate.day;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(
-                        "${day.day}",
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      selected: selected,
-                      onSelected: (_) => setState(() => _selectedDate = day),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              "Session: ${sessionTimeLabel(widget.location) ?? ''}. The "
-              "patient will get the next queue number for that day.",
-              style: const TextStyle(fontSize: 12, color: Color(0xFF506D54)),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
-        ),
-        ElevatedButton(
-          onPressed: days.any((d) => d == _selectedDate)
-              ? () => Navigator.pop(context, _selectedDate)
-              : null,
-          child: const Text("Reschedule"),
-        ),
-      ],
     );
   }
 }

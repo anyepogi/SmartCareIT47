@@ -14,16 +14,16 @@ const List<String> _weekdayNames = [
 ];
 
 /* Shown on the booking and reschedule screens where the time slot picker
-used to be. It shows the clinic's session hours for the chosen day and
-explains that patients get a queue number in the order they book (like
-SO1 for the first online booking at Sta. Rita) instead of picking a time.
-It also shows how many of the session's 25 slots are left. */
+used to be. It shows the clinic hours for the chosen day, a short note
+that a late queue number might not be seen before the session ends, and
+how many of the session's 25 slots are left. */
 class SessionInfoCard extends StatefulWidget {
   const SessionInfoCard({
     super.key,
     required this.location,
     required this.date,
     this.excludeAppointmentId,
+    this.note,
   });
 
   final String location;
@@ -31,6 +31,9 @@ class SessionInfoCard extends StatefulWidget {
 
   /// The appointment being rescheduled, so it isn't counted as taken.
   final int? excludeAppointmentId;
+
+  /// Replaces the default patient-facing note, e.g. on the staff screens.
+  final String? note;
 
   @override
   State<SessionInfoCard> createState() => _SessionInfoCardState();
@@ -83,7 +86,6 @@ class _SessionInfoCardState extends State<SessionInfoCard> {
     final location = widget.location;
     final date = widget.date;
     final slots = _slots;
-    final letter = location.isEmpty ? 'S' : location[0];
     // Larger text and padding on tablets (wider than 800px).
     final tablet = MediaQuery.sizeOf(context).width > 800;
     return Container(
@@ -122,10 +124,10 @@ class _SessionInfoCardState extends State<SessionInfoCard> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "No need to pick a time. You'll get a queue number based "
-                  "on the order you book (for example ${letter}O1 is the "
-                  "first online booking), and patients are served in that "
-                  "order.",
+                  widget.note ??
+                      "Patients are served by queue number. If your number "
+                          "is near the end, you might not be seen before the "
+                          "session ends.",
                   style: TextStyle(
                     color: const Color(0xFF404040),
                     fontSize: tablet ? 13.5 : 12,
